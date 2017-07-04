@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import os
 
     from shutil import copy2
-    
+
     path = os.path.dirname(tpg_gui.__file__)
     src = path+"/SkelePrint_UI.pyc"
 

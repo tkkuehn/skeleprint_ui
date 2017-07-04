@@ -6,25 +6,16 @@
 #    Feb 25, 2017 11:35:57 PM
 
 from __future__ import division
-import sys
 import os
+import errno
 import math
 import time
-import datetime
-from pprint import pprint
 
 
 try:
-    from Tkinter import *
+    from Tkinter import DoubleVar
 except ImportError:
-    from tkinter import *
-
-try:
-    import ttk
-    py3 = 0
-except ImportError:
-    import tkinter.ttk as ttk
-    py3 = 1
+    from tkinter import DoubleVar
 
 
 def set_Tk_var():
@@ -50,11 +41,6 @@ def set_Tk_var():
 
     global feedrate
     feedrate = DoubleVar()
-
-
-def tpg(p1, p2, p3, p4, p5, p6):
-    print('tpg_gui_support.tpg')
-    sys.stdout.flush()
 
 
 def init(top, gui, *args, **kwargs):
@@ -196,7 +182,7 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
         # # commands.append("M9")
 
         # a += 1
- 
+
         # # print "start point", a
         # # print "winding ratio", (a/n)
         # commands.append("M8 G1 Y{:.5f}".format((-1)*mm_per_rev*(y+(a/n))))
@@ -236,7 +222,7 @@ def end_gcode():
     commands.append("G0 X{:.5f} Y{:.5f}".format(0, 0))
     commands.append("; End g code")
     # print "\n".join(commands)
- 
+
     timestr = time.strftime("%d_%m-%H_%M_%S")
 
     loc = os.path.join(os.path.expanduser("~"),
@@ -247,10 +233,11 @@ def end_gcode():
         try:
             os.makedirs(loc)
         except OSError as exc:  # Guard against race condition
-            print "Directory not found, somehow you don't have a desktop. Or I can't find it. "
+            print ("Directory not found, somehow you don't have a desktop. ",
+                   "Or I can't find it. ")
             if exc.errno != errno.EEXIST:
                 raise
- 
+
     with open(os.path.join(loc, filename), "w") as file:
         file.write("\n".join(commands))
 
@@ -258,7 +245,7 @@ def end_gcode():
 def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         helix_angle, smear_factor, feedrate_og):
     """Generate g-code for printing cylinders at various angles.
- 
+
     Required params:
         axial direction travel - total length of print (ex. 200)
         filament width - width of filament (0.1)
@@ -280,33 +267,35 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
 
     smear_factor = smear_factor * 0.01
     print "smear factor", smear_factor
- 
-    layers = ((final_diameter - printbed_diameter)*0.5) / (filament_width_og * smear_factor)
+
+    layers = (((final_diameter - printbed_diameter) * 0.5)
+              / (filament_width_og * smear_factor))
 
     if (layers < 1):
         layers = 1.0
 
     if (layers % (filament_width_og*smear_factor) != 0):
         layers = math.floor(layers)
-        print "The print diameter you've set is not symmetrical and has been rounded to {} mm, with {} layers".format(final_diameter-filament_width_og, layers)
+        print "The print diameter you've set is not symmetrical and has \
+been rounded to {} mm, with {} layers".format(
+                       final_diameter - filament_width_og, layers)
 
     print "layers:", layers
     commands.append(";layers={}".format(layers))
 
     print "original helix angle:", helix_angle
- 
+
     min_angle = math.atan(filament_width_og/(math.pi*printbed_diameter))
     print "min angle", min_angle
 
-    if (helix_angle >= 88):  # any angle greater than this will print too slowly
+    if (helix_angle >= 88):  # angles greater than this will print too slowly
         helix_angle = 88
-        max_angle_print = True
 
     theta = helix_angle * math.pi/180  # convert degrees to radians
     # print "theta (rads):", theta
     base_case = False
 
-    if (theta <= min_angle):  # print a single helix as close together as possible
+    if (theta <= min_angle):  # print one helix as close together as possible
         theta = min_angle
         base_case = True
 
@@ -315,24 +304,28 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
     commands.append(";helix_angle={}".format((theta * 180)/math.pi))
 
     current_layer = 0
-    commands.append("G0 G54 G17 G21 G90 G94 M5 M9 T0 F0.0 S0")  # set defaults: absolute position, mm, stop all movements
+
+    # set defaults: absolute position, mm, stop all movements
+    commands.append("G0 G54 G17 G21 G90 G94 M5 M9 T0 F0.0 S0")
     commands.append("G10 P0 L20 X0 Y0 Z0")
 
     while (current_layer < layers):
 
         print "Layer: ", current_layer
-        layer_diameter = printbed_diameter + (current_layer * filament_width_og)
+        layer_diameter = (printbed_diameter
+                          + (current_layer * filament_width_og))
         print "layer diameter", layer_diameter
         circumference = math.pi * layer_diameter
         print "circumference", circumference
- 
+
         x_move_per_rev = (circumference)*(math.tan(theta))
- 
+
         # distance traveled in the axial direction with every rotation
 
         print "x_move_per_rev:", x_move_per_rev
 
-        filament_width = filament_width_og/math.cos(theta)  # filament width corrected for angle of deposition
+        # filament width corrected for angle of deposition
+        filament_width = filament_width_og/math.cos(theta)
         print "filament width update:", filament_width
         n = x_move_per_rev/filament_width  # number of start points
         print "number of start points: ", n
@@ -348,10 +341,12 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
                 n = 1
             theta = angle_finder(n, circumference, filament_width)
             print "theta (rads) for layer {}: {}".format(current_layer, theta)
-            print "number of total start points for layer {}: {}".format(current_layer, n)
+            print "number of total start points for layer {}: {}".format(
+                    current_layer, n)
             print "updated helix angle", (theta*180/math.pi)
 
-        # filament_width = filament_width_og/math.cos(theta)  # corrects for change in filament width caused by print angle
+        # # corrects for change in filament width caused by print angle
+        # filament_width = filament_width_og/math.cos(theta)
 
         x2 = axial_travel-filament_width  # adjusted for endpoint
         y = axial_travel/x_move_per_rev
