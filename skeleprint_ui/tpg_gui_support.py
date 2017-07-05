@@ -119,77 +119,38 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
     mm_per_rev = (10)
 
     a = 0  # number of helices already printed
-    # print "current layer", current_layer
-    # print "filament width", filament_width
-    # print "increment", increment_size
-    # print "n", n
-    # print "y", y
-    # print "layer height", layer_height
+
     commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
     commands.append("G0 X{:.5f}".format(0))
     commands.append("G10 P0 L20 X0 Y0")  # reset x and y axis position
 
     while (a/n < 1-increment_size and (current_layer) % 2 == 0):
-        # print "in forward loop "
-        # print "start point", a
-        # print "winding ratio", (a/n)
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2, mm_per_rev*(y+(a/n))))
         commands.append("M9")
+
         a += 1
-        # print "start point", a
-        # print "winding ratio", (a/n)
         commands.append("G1 Y{:.5f}".format(mm_per_rev*(y+(a/n))))
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(0, mm_per_rev*(a/n)))
         commands.append("M9")
 
         a += 1
-        # print "start point", a
-        # print "winding ratio", (a/n)
         commands.append("G1 Y{:.5f}".format(mm_per_rev*(a/n)))
 
     while (a/n < 1-increment_size and (current_layer) % 2 == 1):
-        # print "in forward loop "
-        # print "start point", a
-        # print "winding ratio", (a/n)
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2, (-1) * mm_per_rev*(y+(a/n))))
         commands.append("M9")
+
         a += 1
-        # print "start point", a
-        # print "winding ratio", (a/n)
         commands.append("G1 Y{:.5f}".format((-1)*mm_per_rev*(y+(a/n))))
 
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             0, (-1)*mm_per_rev*(a/n)))
         commands.append("M9")
+
         a += 1
-        # print "start point", a
-        # print "winding ratio", (a/n)
         commands.append("G1 Y{:.5f}".format((-1)*mm_per_rev*(a/n)))
-
-        # # print "in reverse loop "
-        # # print "start point", a
-        # # print "winding ratio", (a/n)
-        # commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-        #     0, (-1)*mm_per_rev*((a/n))))
-        # #commands.append("M9")
-        # a += 1
-        # # print "start point", a
-        # # print "winding ratio", (a/n)
-
-        # commands.append("M8 G1 Y{:.5f}".format((-1)*mm_per_rev*(a/n)))
-        # # commands.append("M9")
-        # commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-        #     x2, (-1)*mm_per_rev*(y+(a/n))))
-        # # commands.append("M9")
-
-        # a += 1
-
-        # # print "start point", a
-        # # print "winding ratio", (a/n)
-        # commands.append("M8 G1 Y{:.5f}".format((-1)*mm_per_rev*(y+(a/n))))
-        # # commands.append("M9")
 
 
 def min_angle_print(current_layer, x2, y, layer_height):
@@ -200,27 +161,17 @@ def min_angle_print(current_layer, x2, y, layer_height):
     layer_height -- height of each layer
     """
 
-    # increment_size = 1/n
     mm_per_rev = (10)
-
-    # print "current layer", current_layer
-    # print "filament width", filament_width
-    # print "increment", increment_size
-    # print "n", n
-    # print "y", y
-    # print "layer height", layer_height
 
     commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
     commands.append("G0 X{:.5f}".format(0))
     commands.append("G10 P0 L20 X0 Y0")  # reset x and y axis position
 
     if (current_layer % 2 == 0):
-        # commands.append("G0 X{:.5f} Y{:.5f}".format(0, mm_per_rev*0))
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(x2, mm_per_rev*y))
         commands.append("M9")
 
     else:
-        # commands.append("G0 X{:.5f} Y{:.5f}".format(x2, mm_per_rev*y))
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(x2, (-1)*mm_per_rev*y))
         commands.append("M9")
 
@@ -232,7 +183,6 @@ def end_gcode():
     commands.append("G0 Z{:.5f}".format(20))
     commands.append("G0 X{:.5f} Y{:.5f}".format(0, 0))
     commands.append("; End g code")
-    # print "\n".join(commands)
 
     timestr = time.strftime("%d_%m-%H_%M_%S")
 
