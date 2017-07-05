@@ -213,7 +213,7 @@ class Tool_Path_Generator:
         self.Label7.configure(text='''mm''')
 
         self.Label8 = Label(self.Labelframe1)
-        self.Label8.place(relx=0.03	, rely=0.22, relheight=0.04, relwidth=0.34)
+        self.Label8.place(relx=0.03, rely=0.22, relheight=0.04, relwidth=0.34)
         self.Label8.configure(activebackground="#e6e6e6")
         self.Label8.configure(activeforeground="black")
         self.Label8.configure(background="#e6e6e6")
