@@ -120,37 +120,34 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
     a = 0  # number of helices already printed
 
+    # Home the print head in the radial and axial directions
     commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
     commands.append("G0 X{:.5f}".format(0))
-    commands.append("G10 P0 L20 X0 Y0")  # reset x and y axis position
+    # Redefine current axial and rotational coordinates as 0
+    commands.append("G10 P0 L20 X0 Y0")
 
-    while (a/n < 1-increment_size and (current_layer) % 2 == 0):
+    # Make rotation direction alternate every other layer
+    if (current_layer % 2 == 0):
+        dir_mod = 1
+    else:
+        dir_mod = -1
+
+    while (a/n < 1-increment_size):
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            x2, mm_per_rev*(y+(a/n))))
+            x2,
+            dir_mod * mm_per_rev * (y + (a / n))))
         commands.append("M9")
 
         a += 1
-        commands.append("G1 Y{:.5f}".format(mm_per_rev*(y+(a/n))))
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(0, mm_per_rev*(a/n)))
-        commands.append("M9")
-
-        a += 1
-        commands.append("G1 Y{:.5f}".format(mm_per_rev*(a/n)))
-
-    while (a/n < 1-increment_size and (current_layer) % 2 == 1):
+        commands.append("G1 Y{:.5f}".format(
+            dir_mod * mm_per_rev * (y + (a / n))))
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            x2, (-1) * mm_per_rev*(y+(a/n))))
+            0,
+            dir_mod * mm_per_rev * (a / n)))
         commands.append("M9")
 
         a += 1
-        commands.append("G1 Y{:.5f}".format((-1)*mm_per_rev*(y+(a/n))))
-
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            0, (-1)*mm_per_rev*(a/n)))
-        commands.append("M9")
-
-        a += 1
-        commands.append("G1 Y{:.5f}".format((-1)*mm_per_rev*(a/n)))
+        commands.append("G1 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
 
 
 def min_angle_print(current_layer, x2, y, layer_height):
