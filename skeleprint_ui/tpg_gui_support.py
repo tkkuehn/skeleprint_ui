@@ -181,20 +181,24 @@ def min_angle_print(current_layer, x2, y, layer_height):
     layer_height -- height of each layer
     """
 
-    mm_per_rev = (10)
+    mm_per_rev = 10
 
+    # Home the print head
     commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
     commands.append("G0 X{:.5f}".format(0))
     commands.append("G10 P0 L20 X0 Y0")  # reset x and y axis position
 
+    # Make rotation direction alternate every other layer
     if (current_layer % 2 == 0):
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(x2, mm_per_rev*y))
-        commands.append("M9")
-
+        dir_mod = 1
     else:
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(x2, (-1)*mm_per_rev*y))
-        commands.append("M9")
+        dir_mod = -1
 
+    # Print one helix
+    commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
+        x2,
+        dir_mod * mm_per_rev * y))
+    commands.append("M9")
 
 def end_gcode():
     """Add final g code and write file containing it."""
