@@ -317,7 +317,9 @@ been rounded to {} mm, with {} layers".format(
         # filament width corrected for angle of deposition
         filament_width = filament_width_og / math.cos(theta)
         print "filament width update:", filament_width
-        n = x_move_per_rev / filament_width  # number of start points
+
+        # number of start points
+        n = x_move_per_rev / filament_width
         print "number of start points: ", n
 
         if (float(n).is_integer()):
