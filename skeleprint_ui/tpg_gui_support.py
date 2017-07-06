@@ -113,12 +113,21 @@ def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
 
 
 def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
-    """Generate the g code for one layer."""
+    """Generate the g code for one layer.
 
-    increment_size = 1/n
-    mm_per_rev = (10)
+    Arguments:
+    current_layer -- index (from 0) of the current layer
+    filament_width -- width of the filament in the axial direction
+    x2 -- total length of the print
+    y -- total number of turns required to print one layer
+    n -- number of start points for the current layer
+    layer_height -- height of one layer
+    """
 
-    a = 0  # number of helices already printed
+    increment_size = 1 / n
+    mm_per_rev = 10
+
+    a = 0  # index of the helix currently being printed
 
     # Home the print head in the radial and axial directions
     commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
@@ -133,20 +142,24 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
         dir_mod = -1
 
     while (a/n < 1-increment_size):
+        # print one helix the entire length of the print
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
         commands.append("M9")
 
         a += 1
+        # rotate slightly to the next start point
         commands.append("G1 Y{:.5f}".format(
             dir_mod * mm_per_rev * (y + (a / n))))
+        # print a helix back to the axial origin
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             0,
             dir_mod * mm_per_rev * (a / n)))
         commands.append("M9")
 
         a += 1
+        # rotate slightly to the next start point
         commands.append("G1 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
 
 
