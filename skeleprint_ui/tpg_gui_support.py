@@ -208,7 +208,7 @@ def end_gcode():
     commands.append("G0 X{:.5f} Y{:.5f}".format(0, 0))
     commands.append("; End g code")
 
-    timestr = time.strftime("%d_%m-%H_%M_%S")
+    timestr = time.strftime("%y_%m_%d-%H_%M_%S")
 
     loc = os.path.join(os.path.expanduser("~"),
                        os.path.join('Desktop', 'gcode'))
