@@ -124,7 +124,6 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
     layer_height -- height of one layer
     """
 
-    increment_size = 1 / n
     mm_per_rev = 10
 
     a = 0  # index of the helix currently being printed
@@ -141,7 +140,7 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
     else:
         dir_mod = -1
 
-    while (a/n < 1-increment_size):
+    while (a < n):
         # print one helix the entire length of the print
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2,
@@ -152,15 +151,26 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
         # rotate slightly to the next start point
         commands.append("G1 Y{:.5f}".format(
             dir_mod * mm_per_rev * (y + (a / n))))
-        # print a helix back to the axial origin
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
+
+        # check if the layer is complete
+        if (a < n):
+            extrude = "M8 "
+        else:
+            extrude = ""
+
+        # return to the other side, extruding if necessary
+        commands.append("{}G1 X{:.5f} Y{:.5f}".format(
+            extrude,
             0,
             dir_mod * mm_per_rev * (a / n)))
-        commands.append("M9")
 
-        a += 1
-        # rotate slightly to the next start point
-        commands.append("G1 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
+        # if extruding, stop
+        if (a < n):
+            commands.append("M9")
+            a += 1
+            
+            # rotate slightly to the next start point
+            commands.append("G1 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
 
 
 def min_angle_print(current_layer, x2, y, layer_height):
