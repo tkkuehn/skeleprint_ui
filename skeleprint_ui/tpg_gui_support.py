@@ -345,6 +345,11 @@ been rounded to {} mm, with {} layers".format(
         feedrate = calc_tangential_velocity(
             feedrate_og, axial_travel, layer_diameter, theta)
 
+        # Printer can't handle feed rates > 530 mm/min
+        # This is kind of a hack - the user should be notified of this case
+        if (feedrate > 530):
+            feedrate = 530
+
         # Step 5: Print layer
         init_layer(feedrate, current_layer, printbed_diameter,
                    filament_width_og, layer_diameter)
