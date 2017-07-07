@@ -142,10 +142,10 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
     while (a < n):
         # print one helix the entire length of the print
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
+        commands.append("M8 M3 G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
-        commands.append("M9")
+        commands.append("M9 M5")
 
         a += 1
         # rotate slightly to the next start point
@@ -154,7 +154,7 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
         # check if the layer is complete
         if (a < n):
-            extrude = "M8 "
+            extrude = "M8 M3 "
         else:
             extrude = ""
 
@@ -166,11 +166,12 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
         # if extruding, stop
         if (a < n):
-            commands.append("M9")
+            commands.append("M9 M5")
             a += 1
-            
+
             # rotate slightly to the next start point
-            commands.append("G1 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
+            commands.append("G1 Y{:.5f}".format(
+                dir_mod * mm_per_rev * (a / n)))
 
 
 def min_angle_print(current_layer, x2, y, layer_height):
@@ -195,10 +196,11 @@ def min_angle_print(current_layer, x2, y, layer_height):
         dir_mod = -1
 
     # Print one helix
-    commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
+    commands.append("M8 M3 G1 X{:.5f} Y{:.5f}".format(
         x2,
         dir_mod * mm_per_rev * y))
-    commands.append("M9")
+    commands.append("M9 M5")
+
 
 def end_gcode():
     """Add final g code and write file containing it."""
@@ -298,7 +300,7 @@ been rounded to {} mm, with {} layers".format(
     current_layer = 0
 
     # set defaults: absolute position, mm, stop all movements
-    commands.append("G0 G54 G17 G21 G90 G94 M5 M9 T0 F0.0 S0")
+    commands.append("G0 G54 G17 G21 G90 G94 M9 M5 T0 F0.0 S0")
     commands.append("G10 P0 L20 X0 Y0 Z0")
 
     while (current_layer < layers):
