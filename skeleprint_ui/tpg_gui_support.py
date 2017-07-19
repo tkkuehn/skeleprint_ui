@@ -174,6 +174,63 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
                 dir_mod * mm_per_rev * (a / n)))
 
 
+def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
+                    uv_offset, offset_rotations):
+    """Generate the g code for one layer with an offset UV spot.
+
+    Arguments:
+    current_layer -- index (from 0) of the current layer
+    filament_width -- width of the filament in the axial direction
+    x2 -- total length of the print
+    y -- total number of turns required to print one layer
+    n -- number of start points for the current layer
+    layer_height -- height of one layer
+    uv_offset -- distance from the UV spot to the syringe tip
+    offset_rotations -- number of rotations for the offset distance
+    """
+
+    mm_per_rev = 10
+
+    a = 0  # index of the helix currently being printed
+
+    # Home the print head in the radial and axial directions
+    commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
+    commands.append("G0 X{:.5f}".format(0))
+    # Redefine current axial and rotational coordinates as 0
+    commands.append("G10 P0 L20 X0 Y0")
+
+    # Make rotation direction alternate every other layer
+    if (current_layer % 2 == 0):
+        dir_mod = 1
+    else:
+        dir_mod = -1
+
+    while (a < n):
+        # print the portion of the helix before the uv pen can reach
+        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
+            uv_offset,
+            dir_mod * mm_per_rev * ((a / n) + offset_rotations)))
+
+        # print the rest of the helix the entire length of the print
+        commands.append("M3 G1 X{:.5f} Y{:.5f}".format(
+            x2 - uv_offset,
+            dir_mod * mm_per_rev * (y + (a / n) - offset_rotations)))
+        commands.append("M9")
+
+        # cure the remaining uncured part of the helix
+        commands.append("G1 X{:.5f} Y{:.5f}".format(
+            x2,
+            dir_mod * mm_per_rev * (y + (a / n))))
+        commands.append("M5")
+
+        a += 1
+
+        # return to the other side
+        commands.append("G0 X{:.5f} Y{:.5f}".format(
+            0,
+            dir_mod * mm_per_rev * (a / n)))
+
+
 def min_angle_print(current_layer, x2, y, layer_height):
     """Generate g code to print one layer at the minimum angle.
 
@@ -230,7 +287,8 @@ def end_gcode():
 
 
 def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
-        helix_angle, smear_factor, feedrate_og):
+        helix_angle, smear_factor, feedrate_og, uv_is_offset=False,
+        uv_offset=30.0):
     """Generate g-code for printing cylinders at various angles.
 
     Required params:
@@ -241,6 +299,7 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         final_diameter - target print diameter
         helix_angle - angle of the helix printed (0 - 90)
         smear_factor - how much the subsequent layer is smeared (0 - 1)
+        uv_is_offset - true if the uv pen isn't pointing at the print head
 
     all units are in mm and degrees
     """
@@ -320,6 +379,25 @@ been rounded to {} mm, with {} layers".format(
         filament_width = filament_width_og / math.cos(theta)
         print "filament width update:", filament_width
 
+        # If necessary, update the deposition angle to ensure each helix gets
+        # cured properly
+        offset_divisor = 1.0
+        if (uv_is_offset and not base_case):
+            # revolutions per offset distance - will be adjusted to a whole
+            # number
+            pitch_adjust = uv_offset / x_move_per_rev
+
+            # to be cured, the mandre needs to rotate a whole number of times
+            # before the pen reaches the ink
+            offset_divisor = round(pitch_adjust)
+            if (offset_divisor < 1.0):
+                offset_divisor = 1.0
+
+            # actually change the relevant variables
+            x_move_per_rev = uv_offset / offset_divisor
+            theta = math.atan(x_move_per_rev / circumference)
+            filament_width = filament_width_og / math.cos(theta)
+
         # number of start points
         n = x_move_per_rev / filament_width
         print "number of start points: ", n
@@ -358,6 +436,10 @@ been rounded to {} mm, with {} layers".format(
         if (base_case):
             min_angle_print(
                 current_layer, x2, y, filament_width_og * smear_factor)
+        elif (uv_is_offset):
+            offset_uv_gcode(current_layer, filament_width, x2, y, n,
+                            filament_width_og * smear_factor, uv_offset,
+                            offset_divisor)
         else:
             main_gcode(current_layer, filament_width, x2, y, n,
                        filament_width_og * smear_factor)
