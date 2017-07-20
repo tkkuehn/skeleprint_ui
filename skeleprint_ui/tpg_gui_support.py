@@ -41,6 +41,9 @@ def set_Tk_var():
     global feedrate
     feedrate = DoubleVar()
 
+    global uv_offset
+    uv_offset = DoubleVar()
+
 
 def init(top, gui, *args, **kwargs):
     global w, top_level, root
@@ -287,8 +290,7 @@ def end_gcode():
 
 
 def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
-        helix_angle, smear_factor, feedrate_og, uv_is_offset=False,
-        uv_offset=30.0):
+        helix_angle, smear_factor, feedrate_og, uv_offset):
     """Generate g-code for printing cylinders at various angles.
 
     Required params:
@@ -299,7 +301,6 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         final_diameter - target print diameter
         helix_angle - angle of the helix printed (0 - 90)
         smear_factor - how much the subsequent layer is smeared (0 - 1)
-        uv_is_offset - true if the uv pen isn't pointing at the print head
 
     all units are in mm and degrees
     """
@@ -311,6 +312,11 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
     commands.append(";printbed_diameter={}".format(printbed_diameter))
     commands.append(";final_diameter={}".format(final_diameter))
     commands.append(";feedrate from flowrate={}".format(feedrate_og))
+
+    if (uv_offset <= 0):
+        uv_is_offset = False
+    else:
+        uv_is_offset = True
 
     smear_factor = smear_factor * 0.01
     print "smear factor", smear_factor

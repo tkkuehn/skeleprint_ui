@@ -7,10 +7,10 @@ import os
 
 try:
     from Tkinter import Tk, Toplevel, Label, LabelFrame, GROOVE, Entry
-    from Tkinter import Scale, Message, N, Button, RAISED, Menu
+    from Tkinter import Scale, Message, N, S, W, E, Button, RAISED, Menu
 except ImportError:
     from tkinter import Tk, Toplevel, Label, LabelFrame, GROOVE, Entry
-    from tkinter import Scale, Message, N, Button, RAISED, Menu
+    from tkinter import Scale, Message, N, S, W, E, Button, RAISED, Menu
 
 from PIL import Image, ImageTk
 
@@ -24,7 +24,7 @@ def vp_start_gui():
     tpg_gui_support.set_Tk_var()
     top = Tool_Path_Generator(root)
     tpg_gui_support.init(root, top)
-    root.minsize(900, 700)
+    root.minsize(700, 550)
     root.mainloop()
 
 
@@ -57,7 +57,7 @@ class Tool_Path_Generator:
         font11 = "-size 15 -weight normal -slant roman "  \
             "-underline 0 -overstrike 0"
 
-        top.geometry("900x800+404+92")
+        top.geometry("700x550")
         top.title("SkelePrint Tool Path Generator")
         top.configure(background="#e6e6e6")
         top.configure(highlightbackground="#e6e6e6")
@@ -70,28 +70,26 @@ class Tool_Path_Generator:
         tpg_gui_support.helix_angle.set(45.0)
         tpg_gui_support.smear_factor.set(100.0)
         tpg_gui_support.feedrate.set(1300.0)
+        tpg_gui_support.uv_offset.set(32.5)
 
         self.Label7 = Label(top)
-        self.Label7.place(relx=0.00, rely=0.01, height=35, width=323)
+        self.Label7.grid(row=0, column=0, sticky=W)
         self.Label7.configure(background="#e6e6e6")
         self.Label7.configure(font=font11)
         self.Label7.configure(foreground="#000000")
         self.Label7.configure(text='''SkelePrint Tool Path Generator''')
 
         self.Labelframe1 = LabelFrame(top)
-        self.Labelframe1.place(relx=0.03, rely=0.06, relheight=0.78,
-                               relwidth=0.46)
+        self.Labelframe1.grid(row=1, column=0, sticky=N+S)
         self.Labelframe1.configure(relief=GROOVE)
         self.Labelframe1.configure(foreground="black")
         self.Labelframe1.configure(text='''Dimensions''')
         self.Labelframe1.configure(background="#e6e6e6")
         self.Labelframe1.configure(highlightbackground="#e6e6e6")
         self.Labelframe1.configure(highlightcolor="black")
-        self.Labelframe1.configure(width=370)
 
         self.axial_length = Entry(self.Labelframe1)
-        self.axial_length.place(relx=0.41, rely=0.06, relheight=0.04,
-                                relwidth=0.34)
+        self.axial_length.grid(row=0, column=1)
         self.axial_length.configure(background="white")
         self.axial_length.configure(font="TkFixedFont")
         self.axial_length.configure(foreground="#000000")
@@ -103,7 +101,7 @@ class Tool_Path_Generator:
         self.axial_length.configure(textvariable=tpg_gui_support.axial_length)
 
         self.Label1 = Label(self.Labelframe1)
-        self.Label1.place(relx=0.03, rely=0.06, relheight=0.04, relwidth=0.34)
+        self.Label1.grid(row=0, column=0, sticky=E)
         self.Label1.configure(activebackground="#e6e6e6")
         self.Label1.configure(activeforeground="black")
         self.Label1.configure(background="#e6e6e6")
@@ -111,10 +109,9 @@ class Tool_Path_Generator:
         self.Label1.configure(highlightbackground="#e6e6e6")
         self.Label1.configure(highlightcolor="black")
         self.Label1.configure(text='''Axial Length''')
-        self.Label1.configure(width=88)
 
         self.Label2 = Label(self.Labelframe1)
-        self.Label2.place(relx=0.75, rely=0.06, height=21)
+        self.Label2.grid(row=0, column=2, sticky=W)
         self.Label2.configure(activebackground="#e6e6e6")
         self.Label2.configure(activeforeground="black")
         self.Label2.configure(background="#e6e6e6")
@@ -125,7 +122,7 @@ class Tool_Path_Generator:
         self.Label2.configure(text='''mm''')
 
         self.Label3 = Label(self.Labelframe1)
-        self.Label3.place(relx=0.03, rely=0.11, relheight=0.04, relwidth=0.34)
+        self.Label3.grid(row=1, column=0, sticky=E)
         self.Label3.configure(activebackground="#e6e6e6")
         self.Label3.configure(activeforeground="black")
         self.Label3.configure(background="#e6e6e6")
@@ -135,7 +132,7 @@ class Tool_Path_Generator:
         self.Label3.configure(text='''Printbed Diameter''')
 
         self.Entry2 = Entry(self.Labelframe1)
-        self.Entry2.place(relx=0.41, rely=0.11, relheight=0.04, relwidth=0.34)
+        self.Entry2.grid(row=1, column=1)
         self.Entry2.configure(background="white")
         self.Entry2.configure(font="TkFixedFont")
         self.Entry2.configure(foreground="#000000")
@@ -147,7 +144,7 @@ class Tool_Path_Generator:
         self.Entry2.configure(textvariable=tpg_gui_support.printbed_diameter)
 
         self.Label4 = Label(self.Labelframe1)
-        self.Label4.place(relx=0.75, rely=0.11, height=21, width=28)
+        self.Label4.grid(row=1, column=2, sticky=W)
         self.Label4.configure(activebackground="#e6e6e6")
         self.Label4.configure(activeforeground="black")
         self.Label4.configure(background="#e6e6e6")
@@ -157,7 +154,7 @@ class Tool_Path_Generator:
         self.Label4.configure(text='''mm''')
 
         self.Label5 = Label(self.Labelframe1)
-        self.Label5.place(relx=0.03, rely=0.17, relheight=0.04, relwidth=0.34)
+        self.Label5.grid(row=2, column=0, sticky=E)
         self.Label5.configure(activebackground="#e6e6e6")
         self.Label5.configure(activeforeground="black")
         self.Label5.configure(background="#e6e6e6")
@@ -167,8 +164,7 @@ class Tool_Path_Generator:
         self.Label5.configure(text='''Final Print Diameter''')
 
         self.final_diameter = Entry(self.Labelframe1)
-        self.final_diameter.place(relx=0.41, rely=0.17, relheight=0.04,
-                                  relwidth=0.34)
+        self.final_diameter.grid(row=2, column=1)
         self.final_diameter.configure(background="white")
         self.final_diameter.configure(font="TkFixedFont")
         self.final_diameter.configure(foreground="#000000")
@@ -181,7 +177,7 @@ class Tool_Path_Generator:
                                       final_diameter)
 
         self.Label6 = Label(self.Labelframe1)
-        self.Label6.place(relx=0.75, rely=0.17, height=21, width=28)
+        self.Label6.grid(row=2, column=2, sticky=W)
         self.Label6.configure(activebackground="#e6e6e6")
         self.Label6.configure(activeforeground="black")
         self.Label6.configure(background="#e6e6e6")
@@ -191,7 +187,7 @@ class Tool_Path_Generator:
         self.Label6.configure(text='''mm''')
 
         self.Entry4 = Entry(self.Labelframe1)
-        self.Entry4.place(relx=0.41, rely=0.22, relheight=0.04, relwidth=0.34)
+        self.Entry4.grid(row=3, column=1)
         self.Entry4.configure(background="white")
         self.Entry4.configure(font="TkFixedFont")
         self.Entry4.configure(foreground="#000000")
@@ -203,7 +199,7 @@ class Tool_Path_Generator:
         self.Entry4.configure(textvariable=tpg_gui_support.filament_width_og)
 
         self.Label7 = Label(self.Labelframe1)
-        self.Label7.place(relx=0.75, rely=0.22, height=21, width=28)
+        self.Label7.grid(row=3, column=2, sticky=W)
         self.Label7.configure(activebackground="#e6e6e6")
         self.Label7.configure(activeforeground="black")
         self.Label7.configure(background="#e6e6e6")
@@ -213,7 +209,7 @@ class Tool_Path_Generator:
         self.Label7.configure(text='''mm''')
 
         self.Label8 = Label(self.Labelframe1)
-        self.Label8.place(relx=0.03, rely=0.22, relheight=0.04, relwidth=0.34)
+        self.Label8.grid(row=3, column=0, sticky=E)
         self.Label8.configure(activebackground="#e6e6e6")
         self.Label8.configure(activeforeground="black")
         self.Label8.configure(background="#e6e6e6")
@@ -233,21 +229,19 @@ class Tool_Path_Generator:
         self.tip = Label(self.Labelframe1, image=one)
         self.tip.image = one
         self.tip.configure(background="#e6e6e6")
-        self.tip.place(relx=0.1, rely=0.3)
+        self.tip.grid(row=4, columnspan=3)
 
         self.Labelframe2 = LabelFrame(top)
-        self.Labelframe2.place(relx=0.5, rely=0.06, relheight=0.78,
-                               relwidth=0.46)
+        self.Labelframe2.grid(row=1, column=1, sticky=N+S)
         self.Labelframe2.configure(relief=GROOVE)
         self.Labelframe2.configure(foreground="black")
         self.Labelframe2.configure(text='''Print Properties''')
         self.Labelframe2.configure(background="#e6e6e6")
         self.Labelframe2.configure(highlightbackground="#e6e6e6")
         self.Labelframe2.configure(highlightcolor="black")
-        self.Labelframe2.configure(width=370)
 
         self.Label9 = Label(self.Labelframe2)
-        self.Label9.place(relx=0.01, rely=0.06, relheight=0.04, relwidth=0.3)
+        self.Label9.grid(row=0, column=0, sticky=E)
         self.Label9.configure(activebackground="#e6e6e6")
         self.Label9.configure(activeforeground="black")
         self.Label9.configure(background="#e6e6e6")
@@ -257,7 +251,7 @@ class Tool_Path_Generator:
         self.Label9.configure(text='''Helix Angle''')
 
         self.Entry5 = Entry(self.Labelframe2)
-        self.Entry5.place(relx=0.32, rely=0.06, relheight=0.04, relwidth=0.34)
+        self.Entry5.grid(row=0, column=1)
         self.Entry5.configure(background="white")
         self.Entry5.configure(font="TkFixedFont")
         self.Entry5.configure(foreground="#000000")
@@ -269,7 +263,7 @@ class Tool_Path_Generator:
         self.Entry5.configure(textvariable=tpg_gui_support.helix_angle)
 
         self.Label10 = Label(self.Labelframe2)
-        self.Label10.place(relx=0.68, rely=0.06, height=21, width=113)
+        self.Label10.grid(row=0, column=2, sticky=W)
         self.Label10.configure(activebackground="#e6e6e6")
         self.Label10.configure(activeforeground="black")
         self.Label10.configure(background="#e6e6e6")
@@ -279,8 +273,7 @@ class Tool_Path_Generator:
         self.Label10.configure(text='''degrees [0 - 90]''')
 
         self.Scale1 = Scale(self.Labelframe2)
-        self.Scale1.place(relx=0.32, rely=0.17, relwidth=0.42, relheight=0.0,
-                          height=39)
+        self.Scale1.grid(row=3, column=1, columnspan=2, sticky=S+W)
         self.Scale1.configure(activebackground="#e6e6e6")
         self.Scale1.configure(background="#e6e6e6")
         self.Scale1.configure(font="TkTextFont")
@@ -295,13 +288,13 @@ class Tool_Path_Generator:
         self.Scale1.configure(variable=tpg_gui_support.smear_factor)
 
         self.Label8 = Label(self.Labelframe2)
-        self.Label8.place(relx=0.01, rely=0.12, relheight=0.06, relwidth=0.3)
+        self.Label8.grid(row=1, column=0, sticky=E)
         self.Label8.configure(background="#e6e6e6")
         self.Label8.configure(foreground="#000000")
         self.Label8.configure(text='''Feedrate\n(from flowrate)''')
 
         self.Entry6 = Entry(self.Labelframe2)
-        self.Entry6.place(relx=0.32, rely=0.13, relwidth=0.34, relheight=0.04)
+        self.Entry6.grid(row=1, column=1)
         self.Entry6.configure(background="white")
         self.Entry6.configure(font="TkFixedFont")
         self.Entry6.configure(foreground="#000000")
@@ -313,7 +306,7 @@ class Tool_Path_Generator:
         self.Entry6.configure(textvariable=tpg_gui_support.feedrate)
 
         self.Label12 = Label(self.Labelframe2)
-        self.Label12.place(relx=0.68, rely=0.13, height=21, width=58)
+        self.Label12.grid(row=1, column=2, sticky=W)
         self.Label12.configure(activebackground="#e6e6e6")
         self.Label12.configure(activeforeground="black")
         self.Label12.configure(background="#e6e6e6")
@@ -322,8 +315,40 @@ class Tool_Path_Generator:
         self.Label12.configure(highlightcolor="black")
         self.Label12.configure(text='''mm/min''')
 
+        self.uv_label = Label(self.Labelframe2)
+        self.uv_label.grid(row=2, column=0, sticky=E)
+        self.uv_label.configure(activebackground="#e6e6e6")
+        self.uv_label.configure(activeforeground="black")
+        self.uv_label.configure(background="#e6e6e6")
+        self.uv_label.configure(foreground="#000000")
+        self.uv_label.configure(highlightbackground="#d9d9d9")
+        self.uv_label.configure(highlightcolor="black")
+        self.uv_label.configure(text="UV Distance")
+
+        self.uv_entry = Entry(self.Labelframe2)
+        self.uv_entry.grid(row=2, column=1)
+        self.uv_entry.configure(background="white")
+        self.uv_entry.configure(font="TkFixedFont")
+        self.uv_entry.configure(foreground="#000000")
+        self.uv_entry.configure(highlightbackground="#e6e6e6")
+        self.uv_entry.configure(highlightcolor="black")
+        self.uv_entry.configure(insertbackground="black")
+        self.uv_entry.configure(selectbackground="#c4c4c4")
+        self.uv_entry.configure(selectforeground="black")
+        self.uv_entry.configure(textvariable=tpg_gui_support.uv_offset)
+
+        self.uv_label_2 = Label(self.Labelframe2)
+        self.uv_label_2.grid(row=2, column=2, sticky=W)
+        self.uv_label_2.configure(activebackground="#e6e6e6")
+        self.uv_label_2.configure(activeforeground="black")
+        self.uv_label_2.configure(background="#e6e6e6")
+        self.uv_label_2.configure(foreground="#000000")
+        self.uv_label_2.configure(highlightbackground="#d9d9d9")
+        self.uv_label_2.configure(highlightcolor="black")
+        self.uv_label_2.configure(text='''mm''')
+
         self.Label11 = Label(self.Labelframe2)
-        self.Label11.place(relx=0.01, rely=0.21,  relheight=0.04, relwidth=0.3)
+        self.Label11.grid(row=3, column=0, sticky=S+E)
         self.Label11.configure(activebackground="#e6e6e6")
         self.Label11.configure(activeforeground="black")
         self.Label11.configure(background="#e6e6e6")
@@ -333,7 +358,7 @@ class Tool_Path_Generator:
         self.Label11.configure(text='''Layer Height %''')
 
         self.Label13 = Label(self.Labelframe2)
-        self.Label13.place(relx=0.08, rely=0.26,  relheight=0.06, relwidth=0.8)
+        self.Label13.grid(row=4, columnspan=3)
         self.Label13.configure(activebackground="#f9f9f9")
         self.Label13.configure(activeforeground="black")
         self.Label13.configure(background="#e6e6e6")
@@ -342,10 +367,9 @@ class Tool_Path_Generator:
         self.Label13.configure(highlightcolor="black")
         self.Label13.configure(text='''caution: layer height % is experimental
 default = 100% (ie. layer height = filament width)''')
-        self.Label13.configure(width=305)
 
         self.Message1 = Message(self.Labelframe2)
-        self.Message1.place(relx=0.1, rely=0.52, relheight=0.4, relwidth=0.8)
+        self.Message1.grid(row=6, columnspan=3)
         self.Message1.configure(anchor=N)
         self.Message1.configure(background="#e6e6e6")
         self.Message1.configure(foreground="#000000")
@@ -360,7 +384,6 @@ If angle = 0, the layer will consist of a single helix printed as close \
 together as possible
 
 If angle = 90, the layer will consist of many straight lines''')
-        self.Message1.configure(width=334)
 
         self.tip2 = Label(self.Labelframe2, width=300, height=91)
 
@@ -370,17 +393,17 @@ If angle = 90, the layer will consist of many straight lines''')
         self.tip2 = Label(self.Labelframe2, image=two)
         self.tip2.image = two
         self.tip2.configure(background="#e6e6e6")
-        self.tip2.place(relx=0.1, rely=0.35)
+        self.tip2.grid(row=5, columnspan=3)
 
         self.Label8 = Label(top)
-        self.Label8.place(relx=0.3, rely=0.88, relheight=0.1, relwidth=0.4)
+        self.Label8.grid(row=3, columnspan=2)
         self.Label8.configure(background="#e6e6e6")
         self.Label8.configure(foreground="#000000")
         self.Label8.configure(text='''G Code file will be saved on your Desktop under:
 "gcode/timestamp_skeleprint_gcode.gcode"''')
 
         self.Button1 = Button(top)
-        self.Button1.place(relx=0.3, rely=0.85, relheight=0.05, relwidth=0.4)
+        self.Button1.grid(row=2, columnspan=2)
         self.Button1.configure(activebackground="#e6e6e6")
         self.Button1.configure(activeforeground="#e6e6e6")
         self.Button1.configure(background="#e6e6e6")
@@ -391,7 +414,8 @@ If angle = 90, the layer will consist of many straight lines''')
             tpg_gui_support.final_diameter.get(),
             tpg_gui_support.helix_angle.get(),
             tpg_gui_support.smear_factor.get(),
-            tpg_gui_support.feedrate.get()))
+            tpg_gui_support.feedrate.get(),
+            tpg_gui_support.uv_offset.get()))
         self.Button1.configure(foreground="#000000")
         self.Button1.configure(highlightbackground="#e6e6e6")
         self.Button1.configure(highlightcolor="black")
