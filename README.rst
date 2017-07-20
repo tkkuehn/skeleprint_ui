@@ -179,6 +179,11 @@ When this value is input into the GUI the algorithm uses it to calculate the tan
 
 This value is re-calculated at each layer as the diameter changes at each layer.
 
+UV Distance
+-----------
+
+The UV distance represents the distance from the focal point of the UV pen and the tip of the extrusion needle along the axial axis. A distance of zero represents the pen being pointed directly at the tip of the needle. A distance greater than zero means that the UV pen is trailing the tip of the needle, which necessitates a change in the toolpath.
+
 Layer Height %
 --------------
 
