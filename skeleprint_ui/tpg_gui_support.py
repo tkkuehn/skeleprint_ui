@@ -209,13 +209,8 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
         dir_mod = -1
 
     while (a < n):
-        # print the portion of the helix before the uv pen can reach
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            uv_offset,
-            dir_mod * mm_per_rev * ((a / n) + offset_rotations)))
-
-        # print the rest of the helix the entire length of the print
-        commands.append("M3 G1 X{:.5f} Y{:.5f}".format(
+        # print the helix the entire length of the print
+        commands.append("M3 M8 G1 X{:.5f} Y{:.5f}".format(
             x2 - uv_offset,
             dir_mod * mm_per_rev * (y + (a / n) - offset_rotations)))
         commands.append("M9")
