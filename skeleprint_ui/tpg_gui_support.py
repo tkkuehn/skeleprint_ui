@@ -196,8 +196,11 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
 
     a = 0  # index of the helix currently being printed
 
+    extrusion_height = current_layer * layer_height
+    transit_height = extrusion_height + 1.0
+
     # Home the print head in the radial and axial directions
-    commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
+    commands.append("G0 Z{:.5f}".format(extrusion_height))
     commands.append("G0 X{:.5f}".format(0))
     # Redefine current axial and rotational coordinates as 0
     commands.append("G10 P0 L20 X0 Y0")
@@ -210,7 +213,10 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
 
     while (a < n):
         # print the helix the entire length of the print
-        commands.append("M3 M8 G1 X{:.5f} Y{:.5f}".format(
+        commands.append("M3")
+        commands.append("G4 P0.1")
+        commands.append("M5")
+        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2 - uv_offset,
             dir_mod * mm_per_rev * (y + (a / n) - offset_rotations)))
         commands.append("M9")
@@ -219,14 +225,17 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
         commands.append("G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
+        commands.append("M3")
+        commands.append("G4 P0.1")
         commands.append("M5")
 
         a += 1
 
         # return to the other side
-        commands.append("G0 X{:.5f} Y{:.5f}".format(
-            0,
-            dir_mod * mm_per_rev * (a / n)))
+        commands.append("G0 Z{:.5f}".format(transit_height))
+        commands.append("G0 X{:.5f}".format(0))
+        commands.append("G0 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
+        commands.append("G0 Z{:.5f}".format(extrusion_height))
 
 
 def min_angle_print(current_layer, x2, y, layer_height):
