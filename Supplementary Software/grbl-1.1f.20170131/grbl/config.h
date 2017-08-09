@@ -152,7 +152,7 @@
 // alarm out and force the user to manually disengage the limit switch. Otherwise, if you have one
 // limit switch for each axis, don't enable this option. By keeping it disabled, you can perform a
 // homing cycle while on the limit switch and not have to move the machine off of it.
-// #define LIMITS_TWO_SWITCHES_ON_AXES
+#define LIMITS_TWO_SWITCHES_ON_AXES
 
 // Allows GRBL to track and report gcode line numbers.  Enabling this means that the planning buffer
 // goes from 16 to 15 to make room for the additional line number data in the plan_block_t struct
@@ -208,7 +208,7 @@
 // NOTE: If VARIABLE_SPINDLE is enabled(default), this option has no effect as the PWM output and
 // spindle enable are combined to one pin. If you need both this option and spindle speed PWM,
 // uncomment the config option USE_SPINDLE_DIR_AS_ENABLE_PIN below.
-#define INVERT_SPINDLE_ENABLE_PIN // Default disabled. Uncomment to enable.
+// #define INVERT_SPINDLE_ENABLE_PIN // Default disabled. Uncomment to enable.
 
 // Inverts the selected coolant pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
 // for some pre-built electronic boards.
