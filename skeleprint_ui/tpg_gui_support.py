@@ -214,7 +214,7 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
     while (a < n):
         # print the helix the entire length of the print
         commands.append("M3")
-        commands.append("G4 P0.1")
+        commands.append("G4 P0.2")
         commands.append("M5")
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2 - uv_offset,
@@ -226,7 +226,7 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
         commands.append("M3")
-        commands.append("G4 P0.1")
+        commands.append("G4 P0.2")
         commands.append("M5")
 
         a += 1
