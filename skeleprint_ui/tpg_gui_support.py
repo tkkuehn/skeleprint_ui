@@ -11,53 +11,6 @@ import errno
 import math
 import time
 
-try:
-    from Tkinter import DoubleVar
-except ImportError:
-    from tkinter import DoubleVar
-
-
-def set_Tk_var():
-    # These are Tk variables used passed to Tkinter and must be
-    # defined before the widgets using them are created.
-    global axial_length
-    axial_length = DoubleVar()
-
-    global printbed_diameter
-    printbed_diameter = DoubleVar()
-
-    global final_diameter
-    final_diameter = DoubleVar()
-
-    global filament_width_og
-    filament_width_og = DoubleVar()
-
-    global helix_angle
-    helix_angle = DoubleVar()
-
-    global smear_factor
-    smear_factor = DoubleVar()
-
-    global feedrate
-    feedrate = DoubleVar()
-
-    global uv_offset
-    uv_offset = DoubleVar()
-
-
-def init(top, gui, *args, **kwargs):
-    global w, top_level, root
-    w = gui
-    top_level = top
-    root = top
-
-
-def destroy_window():
-    """Close the window."""
-    global top_level
-    top_level.destroy()
-    top_level = None
-
 
 commands = []
 
