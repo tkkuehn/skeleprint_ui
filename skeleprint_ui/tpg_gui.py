@@ -6,10 +6,10 @@
 import os
 
 try:
-    from Tkinter import Tk, Toplevel, Label, LabelFrame, GROOVE, Entry
+    from Tkinter import Tk, Label, LabelFrame, GROOVE, Entry
     from Tkinter import Scale, Message, N, S, W, E, Button, RAISED, Menu
 except ImportError:
-    from tkinter import Tk, Toplevel, Label, LabelFrame, GROOVE, Entry
+    from tkinter import Tk, Label, LabelFrame, GROOVE, Entry
     from tkinter import Scale, Message, N, S, W, E, Button, RAISED, Menu
 
 from PIL import Image, ImageTk
@@ -26,26 +26,6 @@ def vp_start_gui():
     tpg_gui_support.init(root, top)
     root.minsize(700, 550)
     root.mainloop()
-
-
-w = None
-
-
-def create_Tool_Path_Generator(root, *args, **kwargs):
-    '''Starting point when module is imported by another program.'''
-    global w, w_win, rt
-    rt = root
-    w = Toplevel(root)
-    tpg_gui_support.set_Tk_var()
-    top = Tool_Path_Generator(w)
-    tpg_gui_support.init(w, top, *args, **kwargs)
-    return (w, top)
-
-
-def destroy_Tool_Path_Generator():
-    global w
-    w.destroy()
-    w = None
 
 
 class Tool_Path_Generator:
