@@ -11,6 +11,7 @@ import errno
 import math
 import time
 from offset_uv_strategy import OffsetUvStrategy
+from direct_uv_strategy import DirectUvStrategy
 from default_angle_targeter import DefaultAngleTargeter
 from gcode_utils import MM_PER_REV, MAX_ANGLE, toggle_uv
 
@@ -69,125 +70,6 @@ def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
     commands.append("; layer {}".format(current_layer))
     commands.append(";----------------------")
     commands.append("G1 F{:.5f}".format(feedrate))
-
-
-def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
-    """Generate the g code for one layer.
-
-    Arguments:
-    current_layer -- index (from 0) of the current layer
-    filament_width -- width of the filament in the axial direction
-    x2 -- total length of the print
-    y -- total number of turns required to print one layer
-    n -- number of start points for the current layer
-    layer_height -- height of one layer
-    """
-
-    a = 0  # index of the helix currently being printed
-
-    # Home the print head in the radial and axial directions
-    commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
-    commands.append("G0 X{:.5f}".format(0))
-    # Redefine current axial and rotational coordinates as 0
-    commands.append("G10 P0 L20 X0 Y0")
-
-    # Make rotation direction alternate every other layer
-    if (current_layer % 2 == 0):
-        dir_mod = 1
-    else:
-        dir_mod = -1
-
-    while (a < n):
-        # print one helix the entire length of the print
-        commands.extend(toggle_uv())
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            x2,
-            dir_mod * MM_PER_REV * (y + (a / n))))
-        commands.append("M9")
-        commands.extend(toggle_uv())
-
-        a += 1
-        # rotate slightly to the next start point
-        commands.append("G1 Y{:.5f}".format(
-            dir_mod * MM_PER_REV * (y + (a / n))))
-
-        # check if the layer is complete
-        if (a < n):
-            extrude = "M8 "
-            commands.extend(toggle_uv())
-        else:
-            extrude = ""
-
-        # return to the other side, extruding if necessary
-        commands.append("{}G1 X{:.5f} Y{:.5f}".format(
-            extrude,
-            0,
-            dir_mod * MM_PER_REV * (a / n)))
-
-        # if extruding, stop
-        if (a < n):
-            commands.append("M9")
-            commands.extend(toggle_uv())
-            a += 1
-
-            # rotate slightly to the next start point
-            commands.append("G1 Y{:.5f}".format(
-                dir_mod * MM_PER_REV * (a / n)))
-
-
-def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
-                    uv_offset, offset_rotations):
-    """Generate the g code for one layer with an offset UV spot.
-
-    Arguments:
-    current_layer -- index (from 0) of the current layer
-    filament_width -- width of the filament in the axial direction
-    x2 -- total length of the print
-    y -- total number of turns required to print one layer
-    n -- number of start points for the current layer
-    layer_height -- height of one layer
-    uv_offset -- distance from the UV spot to the syringe tip
-    offset_rotations -- number of rotations for the offset distance
-    """
-
-    a = 0  # index of the helix currently being printed
-
-    extrusion_height = current_layer * layer_height
-    transit_height = extrusion_height + 1.0
-
-    # Home the print head in the radial and axial directions
-    commands.append("G0 Z{:.5f}".format(extrusion_height))
-    commands.append("G0 X{:.5f}".format(0))
-    # Redefine current axial and rotational coordinates as 0
-    commands.append("G10 P0 L20 X0 Y0")
-
-    # Make rotation direction alternate every other layer
-    if (current_layer % 2 == 0):
-        dir_mod = 1
-    else:
-        dir_mod = -1
-
-    while (a < n):
-        # print the helix the entire length of the print
-        commands.extend(toggle_uv())
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            x2 - uv_offset,
-            dir_mod * MM_PER_REV * (y + (a / n) - offset_rotations)))
-        commands.append("M9")
-
-        # cure the remaining uncured part of the helix
-        commands.append("G1 X{:.5f} Y{:.5f}".format(
-            x2,
-            dir_mod * MM_PER_REV * (y + (a / n))))
-        commands.extend(toggle_uv())
-
-        a += 1
-
-        # return to the other side
-        commands.append("G0 Z{:.5f}".format(transit_height))
-        commands.append("G0 X{:.5f}".format(0))
-        commands.append("G0 Y{:.5f}".format(dir_mod * MM_PER_REV * (a / n)))
-        commands.append("G0 Z{:.5f}".format(extrusion_height))
 
 
 def min_angle_print(current_layer, x2, y, layer_height):
@@ -257,13 +139,18 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         final_diameter - target print diameter
         helix_angle - angle of the helix printed (0 - 90)
         smear_factor - how much the subsequent layer is smeared (0 - 1)
+        feedrate_og - target feedrate
+        uv_offset - axial distance between UV spot and needle tip
 
     all units are in mm and degrees
     """
 
     del commands[:]
 
-    strategy = OffsetUvStrategy(uv_offset)
+    if (uv_offset <= 0):
+        strategy = DirectUvStrategy()
+    else:
+        strategy = OffsetUvStrategy(uv_offset)
     targeter = DefaultAngleTargeter(helix_angle)
 
     commands.append(";PARAMETERS")
