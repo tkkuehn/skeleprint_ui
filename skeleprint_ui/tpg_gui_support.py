@@ -58,6 +58,17 @@ def calc_tangential_velocity(feedrate, axial_travel, diameter, theta):
     return tangential_velocity
 
 
+def toggle_uv():
+    """Generate gcode to pulse the UV control line, toggling the pen"""
+    gcode = []
+
+    gcode.append("M3")
+    gcode.append("G4 P0.2")
+    gcode.append("M5")
+
+    return gcode
+
+
 def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
                layer_diameter):
     """Initialize gcode and set feedrate (movement speed of the axis)."""
@@ -98,10 +109,12 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
     while (a < n):
         # print one helix the entire length of the print
-        commands.append("M8 M3 G1 X{:.5f} Y{:.5f}".format(
+        commands.append(toggle_uv())
+        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
-        commands.append("M9 M5")
+        commands.append("M9")
+        commands.append(toggle_uv())
 
         a += 1
         # rotate slightly to the next start point
@@ -110,7 +123,8 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
         # check if the layer is complete
         if (a < n):
-            extrude = "M8 M3 "
+            extrude = "M8 "
+            commands.append(toggle_uv())
         else:
             extrude = ""
 
@@ -122,7 +136,8 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
         # if extruding, stop
         if (a < n):
-            commands.append("M9 M5")
+            commands.append("M9")
+            commands.append(toggle_uv())
             a += 1
 
             # rotate slightly to the next start point
@@ -166,9 +181,7 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
 
     while (a < n):
         # print the helix the entire length of the print
-        commands.append("M3")
-        commands.append("G4 P0.2")
-        commands.append("M5")
+        commands.append(toggle_uv())
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2 - uv_offset,
             dir_mod * mm_per_rev * (y + (a / n) - offset_rotations)))
@@ -178,9 +191,7 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
         commands.append("G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
-        commands.append("M3")
-        commands.append("G4 P0.2")
-        commands.append("M5")
+        commands.append(toggle_uv())
 
         a += 1
 
@@ -213,10 +224,12 @@ def min_angle_print(current_layer, x2, y, layer_height):
         dir_mod = -1
 
     # Print one helix
-    commands.append("M8 M3 G1 X{:.5f} Y{:.5f}".format(
+    commands.append(toggle_uv())
+    commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
         x2,
         dir_mod * mm_per_rev * y))
-    commands.append("M9 M5")
+    commands.append("M9")
+    commands.append(toggle_uv())
 
 
 def end_gcode():
