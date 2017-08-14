@@ -292,6 +292,7 @@ been rounded to {} mm, with {} layers".format(
 
     print "layers:", layers
     commands.append(";layers={}".format(layers))
+    commands.append(";helix_angle={}".format(helix_angle))
 
     current_layer = 0
 
@@ -319,8 +320,6 @@ been rounded to {} mm, with {} layers".format(
             base_case = False
 
         print "base case", base_case
-
-        commands.append(";helix_angle={}".format(math.degrees(theta)))
 
         # Step 3: Number of start points with corresponding angle
         print "Layer: ", current_layer

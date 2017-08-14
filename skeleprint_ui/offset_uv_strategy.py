@@ -58,7 +58,8 @@ class OffsetUvStrategy:
             commands.extend(toggle_uv())
             commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
                 adjusted_axial_length - self.uv_offset,
-                self.MM_PER_REV
+                dir_mod
+                * self.MM_PER_REV
                 * (layer_revolutions
                    + (a / start_points)
                    - self.offset_rotations)
@@ -86,4 +87,4 @@ class OffsetUvStrategy:
             ))
             commands.append("G0 Z{:.5f}".format(extrusion_height))
 
-            return commands
+        return commands
