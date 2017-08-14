@@ -109,12 +109,12 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
 
     while (a < n):
         # print one helix the entire length of the print
-        commands.append(toggle_uv())
+        commands.extend(toggle_uv())
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
         commands.append("M9")
-        commands.append(toggle_uv())
+        commands.extend(toggle_uv())
 
         a += 1
         # rotate slightly to the next start point
@@ -124,7 +124,7 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
         # check if the layer is complete
         if (a < n):
             extrude = "M8 "
-            commands.append(toggle_uv())
+            commands.extend(toggle_uv())
         else:
             extrude = ""
 
@@ -137,7 +137,7 @@ def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
         # if extruding, stop
         if (a < n):
             commands.append("M9")
-            commands.append(toggle_uv())
+            commands.extend(toggle_uv())
             a += 1
 
             # rotate slightly to the next start point
@@ -181,7 +181,7 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
 
     while (a < n):
         # print the helix the entire length of the print
-        commands.append(toggle_uv())
+        commands.extend(toggle_uv())
         commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
             x2 - uv_offset,
             dir_mod * mm_per_rev * (y + (a / n) - offset_rotations)))
@@ -191,7 +191,7 @@ def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
         commands.append("G1 X{:.5f} Y{:.5f}".format(
             x2,
             dir_mod * mm_per_rev * (y + (a / n))))
-        commands.append(toggle_uv())
+        commands.extend(toggle_uv())
 
         a += 1
 
@@ -224,12 +224,12 @@ def min_angle_print(current_layer, x2, y, layer_height):
         dir_mod = -1
 
     # Print one helix
-    commands.append(toggle_uv())
+    commands.extend(toggle_uv())
     commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
         x2,
         dir_mod * mm_per_rev * y))
     commands.append("M9")
-    commands.append(toggle_uv())
+    commands.extend(toggle_uv())
 
 
 def end_gcode():
