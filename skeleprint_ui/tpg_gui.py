@@ -8,9 +8,11 @@ import os
 try:
     from Tkinter import Tk, Label, LabelFrame, GROOVE, Entry, DoubleVar
     from Tkinter import Scale, Message, N, S, W, E, Button, RAISED, Menu
+    from Tkinter import BooleanVar, Radiobutton
 except ImportError:
     from tkinter import Tk, Label, LabelFrame, GROOVE, Entry, DoubleVar
     from tkinter import Scale, Message, N, S, W, E, Button, RAISED, Menu
+    from tkinter import BooleanVar, Radiobutton
 
 from PIL import Image, ImageTk
 
@@ -40,8 +42,9 @@ class Tool_Path_Generator:
         self.filament_width_og = DoubleVar()
         self.helix_angle = DoubleVar()
         self.smear_factor = DoubleVar()
-        self.feedrate = DoubleVar()
+        self.flow_rate = DoubleVar()
         self.uv_offset = DoubleVar()
+        self.use_strong_pattern = BooleanVar()
 
         self.axial_length.set(200.0)
         self.printbed_diameter.set(10.0)
@@ -49,8 +52,9 @@ class Tool_Path_Generator:
         self.filament_width_og.set(0.41)
         self.helix_angle.set(45.0)
         self.smear_factor.set(100.0)
-        self.feedrate.set(1300.0)
+        self.flow_rate.set(0.0015)
         self.uv_offset.set(32.5)
+        self.use_strong_pattern.set(True)
 
         top.geometry("700x550")
         top.title("SkelePrint Tool Path Generator")
@@ -257,8 +261,51 @@ class Tool_Path_Generator:
         self.Label10.configure(highlightcolor="black")
         self.Label10.configure(text='''degrees [0 - 90]''')
 
+        self.strong_targeter_button = Radiobutton(self.Labelframe2)
+        self.strong_targeter_button.grid(row=1, column=0, sticky=E)
+        self.strong_targeter_button.configure(variable=self.use_strong_pattern)
+        self.strong_targeter_button.configure(value=True)
+        self.strong_targeter_button.configure(activebackground="#e6e6e6")
+        self.strong_targeter_button.configure(activeforeground="black")
+        self.strong_targeter_button.configure(background="#e6e6e6")
+        self.strong_targeter_button.configure(foreground="#000000")
+        self.strong_targeter_button.configure(highlightbackground="#e6e6e6")
+        self.strong_targeter_button.configure(highlightcolor="black")
+
+        self.strong_targeter_label = Label(self.Labelframe2)
+        self.strong_targeter_label.grid(row=1, column=1, sticky=W)
+        self.strong_targeter_label.configure(activebackground="#e6e6e6")
+        self.strong_targeter_label.configure(activeforeground="black")
+        self.strong_targeter_label.configure(background="#e6e6e6")
+        self.strong_targeter_label.configure(foreground="#000000")
+        self.strong_targeter_label.configure(highlightbackground="#e6e6e6")
+        self.strong_targeter_label.configure(highlightcolor="black")
+        self.strong_targeter_label.configure(text="Strong angle pattern")
+
+        self.default_targeter_button = Radiobutton(self.Labelframe2)
+        self.default_targeter_button.grid(row=2, column=0, sticky=E)
+        self.default_targeter_button.configure(activebackground="#e6e6e6")
+        self.default_targeter_button.configure(activeforeground="black")
+        self.default_targeter_button.configure(background="#e6e6e6")
+        self.default_targeter_button.configure(foreground="#000000")
+        self.default_targeter_button.configure(highlightbackground="#e6e6e6")
+        self.default_targeter_button.configure(highlightcolor="black")
+        self.default_targeter_button.configure(
+                variable=self.use_strong_pattern)
+        self.default_targeter_button.configure(value=False)
+
+        self.default_targeter_label = Label(self.Labelframe2)
+        self.default_targeter_label.grid(row=2, column=1, sticky=W)
+        self.default_targeter_label.configure(activebackground="#e6e6e6")
+        self.default_targeter_label.configure(activeforeground="black")
+        self.default_targeter_label.configure(background="#e6e6e6")
+        self.default_targeter_label.configure(foreground="#000000")
+        self.default_targeter_label.configure(highlightbackground="#e6e6e6")
+        self.default_targeter_label.configure(highlightcolor="black")
+        self.default_targeter_label.configure(text="Default angle pattern")
+
         self.Scale1 = Scale(self.Labelframe2)
-        self.Scale1.grid(row=3, column=1, columnspan=2, sticky=S+W)
+        self.Scale1.grid(row=5, column=1, columnspan=2, sticky=S+W)
         self.Scale1.configure(activebackground="#e6e6e6")
         self.Scale1.configure(background="#e6e6e6")
         self.Scale1.configure(font="TkTextFont")
@@ -273,13 +320,13 @@ class Tool_Path_Generator:
         self.Scale1.configure(variable=self.smear_factor)
 
         self.Label8 = Label(self.Labelframe2)
-        self.Label8.grid(row=1, column=0, sticky=E)
+        self.Label8.grid(row=3, column=0, sticky=E)
         self.Label8.configure(background="#e6e6e6")
         self.Label8.configure(foreground="#000000")
-        self.Label8.configure(text='''Feedrate\n(from flowrate)''')
+        self.Label8.configure(text='''Flow rate''')
 
         self.Entry6 = Entry(self.Labelframe2)
-        self.Entry6.grid(row=1, column=1)
+        self.Entry6.grid(row=3, column=1)
         self.Entry6.configure(background="white")
         self.Entry6.configure(font="TkFixedFont")
         self.Entry6.configure(foreground="#000000")
@@ -288,20 +335,20 @@ class Tool_Path_Generator:
         self.Entry6.configure(insertbackground="black")
         self.Entry6.configure(selectbackground="#c4c4c4")
         self.Entry6.configure(selectforeground="black")
-        self.Entry6.configure(textvariable=self.feedrate)
+        self.Entry6.configure(textvariable=self.flow_rate)
 
         self.Label12 = Label(self.Labelframe2)
-        self.Label12.grid(row=1, column=2, sticky=W)
+        self.Label12.grid(row=3, column=2, sticky=W)
         self.Label12.configure(activebackground="#e6e6e6")
         self.Label12.configure(activeforeground="black")
         self.Label12.configure(background="#e6e6e6")
         self.Label12.configure(foreground="#000000")
         self.Label12.configure(highlightbackground="#d9d9d9")
         self.Label12.configure(highlightcolor="black")
-        self.Label12.configure(text='''mm/min''')
+        self.Label12.configure(text='''cm^3 / s''')
 
         self.uv_label = Label(self.Labelframe2)
-        self.uv_label.grid(row=2, column=0, sticky=E)
+        self.uv_label.grid(row=4, column=0, sticky=E)
         self.uv_label.configure(activebackground="#e6e6e6")
         self.uv_label.configure(activeforeground="black")
         self.uv_label.configure(background="#e6e6e6")
@@ -311,7 +358,7 @@ class Tool_Path_Generator:
         self.uv_label.configure(text="UV Distance")
 
         self.uv_entry = Entry(self.Labelframe2)
-        self.uv_entry.grid(row=2, column=1)
+        self.uv_entry.grid(row=4, column=1)
         self.uv_entry.configure(background="white")
         self.uv_entry.configure(font="TkFixedFont")
         self.uv_entry.configure(foreground="#000000")
@@ -323,7 +370,7 @@ class Tool_Path_Generator:
         self.uv_entry.configure(textvariable=self.uv_offset)
 
         self.uv_label_2 = Label(self.Labelframe2)
-        self.uv_label_2.grid(row=2, column=2, sticky=W)
+        self.uv_label_2.grid(row=4, column=2, sticky=W)
         self.uv_label_2.configure(activebackground="#e6e6e6")
         self.uv_label_2.configure(activeforeground="black")
         self.uv_label_2.configure(background="#e6e6e6")
@@ -333,7 +380,7 @@ class Tool_Path_Generator:
         self.uv_label_2.configure(text='''mm''')
 
         self.Label11 = Label(self.Labelframe2)
-        self.Label11.grid(row=3, column=0, sticky=S+E)
+        self.Label11.grid(row=5, column=0, sticky=S+E)
         self.Label11.configure(activebackground="#e6e6e6")
         self.Label11.configure(activeforeground="black")
         self.Label11.configure(background="#e6e6e6")
@@ -343,7 +390,7 @@ class Tool_Path_Generator:
         self.Label11.configure(text='''Layer Height %''')
 
         self.Label13 = Label(self.Labelframe2)
-        self.Label13.grid(row=4, columnspan=3)
+        self.Label13.grid(row=6, columnspan=3)
         self.Label13.configure(activebackground="#f9f9f9")
         self.Label13.configure(activeforeground="black")
         self.Label13.configure(background="#e6e6e6")
@@ -354,7 +401,7 @@ class Tool_Path_Generator:
 default = 100% (ie. layer height = filament width)''')
 
         self.Message1 = Message(self.Labelframe2)
-        self.Message1.grid(row=6, columnspan=3)
+        self.Message1.grid(row=8, columnspan=3)
         self.Message1.configure(anchor=N)
         self.Message1.configure(background="#e6e6e6")
         self.Message1.configure(foreground="#000000")
@@ -378,10 +425,10 @@ If angle = 90, the layer will consist of many straight lines''')
         self.tip2 = Label(self.Labelframe2, image=two)
         self.tip2.image = two
         self.tip2.configure(background="#e6e6e6")
-        self.tip2.grid(row=5, columnspan=3)
+        self.tip2.grid(row=7, columnspan=3)
 
         self.Label8 = Label(top)
-        self.Label8.grid(row=3, columnspan=2)
+        self.Label8.grid(row=5, columnspan=2)
         self.Label8.configure(background="#e6e6e6")
         self.Label8.configure(foreground="#000000")
         self.Label8.configure(text='''G Code file will be saved on your Desktop under:
@@ -399,8 +446,9 @@ If angle = 90, the layer will consist of many straight lines''')
             self.final_diameter.get(),
             self.helix_angle.get(),
             self.smear_factor.get(),
-            self.feedrate.get(),
-            self.uv_offset.get()))
+            self.flow_rate.get(),
+            self.uv_offset.get(),
+            self.use_strong_pattern.get()))
         self.Button1.configure(foreground="#000000")
         self.Button1.configure(highlightbackground="#e6e6e6")
         self.Button1.configure(highlightcolor="black")

@@ -10,6 +10,10 @@ import os
 import errno
 import math
 import time
+from offset_uv_strategy import OffsetUvStrategy
+from direct_uv_strategy import DirectUvStrategy
+from strong_angle_targeter import StrongAngleTargeter
+from default_angle_targeter import DefaultAngleTargeter
 
 
 commands = []
@@ -47,26 +51,30 @@ def angle_finder(num_start_points, circumference, filament_width):
     return theta
 
 
-def calc_tangential_velocity(feedrate, axial_travel, diameter, theta):
-    """Calculate the tangential velocity of the print head."""
+def adjust_feed_rate(target_feed_rate, diameter, theta):
+    """Calculate the feed rate that should be passed to Grbl.
 
-    hyp = (math.pi * diameter) / math.cos(theta)
-    time = (hyp/feedrate)
-    w = (2 * math.pi) / time
-    tangential_velocity = w * (diameter / 2)
+    In order to have the print head move at a given target feed rate,
+    the properties of the rotational axis need to be considered. Grbl
+    expects to be handling a cartesian system, so it expects all
+    distances to be distances, not angles. Because of this, the feed
+    rate needs to be adjusted to accomplish the target feed rate. See
+    page 121 of Tristan's lab book for more information.
 
-    return tangential_velocity
+    Required arguments:
+    target_feed_rate -- desired speed of print head relative to mandrel
+    diameter -- diameter of the current layer
+    theta -- target angle
+    """
 
+    new_feed_rate = (target_feed_rate
+                     * (math.pow(math.sin(theta), 2)
+                        + math.pow(10.0
+                                   / diameter
+                                   / math.pi
+                                   * math.cos(theta), 2)))
 
-def toggle_uv():
-    """Generate gcode to pulse the UV control line, toggling the pen"""
-    gcode = []
-
-    gcode.append("M3")
-    gcode.append("G4 P0.2")
-    gcode.append("M5")
-
-    return gcode
+    return new_feed_rate
 
 
 def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
@@ -77,159 +85,6 @@ def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
     commands.append("; layer {}".format(current_layer))
     commands.append(";----------------------")
     commands.append("G1 F{:.5f}".format(feedrate))
-
-
-def main_gcode(current_layer, filament_width, x2, y, n, layer_height):
-    """Generate the g code for one layer.
-
-    Arguments:
-    current_layer -- index (from 0) of the current layer
-    filament_width -- width of the filament in the axial direction
-    x2 -- total length of the print
-    y -- total number of turns required to print one layer
-    n -- number of start points for the current layer
-    layer_height -- height of one layer
-    """
-
-    mm_per_rev = 10
-
-    a = 0  # index of the helix currently being printed
-
-    # Home the print head in the radial and axial directions
-    commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
-    commands.append("G0 X{:.5f}".format(0))
-    # Redefine current axial and rotational coordinates as 0
-    commands.append("G10 P0 L20 X0 Y0")
-
-    # Make rotation direction alternate every other layer
-    if (current_layer % 2 == 0):
-        dir_mod = 1
-    else:
-        dir_mod = -1
-
-    while (a < n):
-        # print one helix the entire length of the print
-        commands.extend(toggle_uv())
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            x2,
-            dir_mod * mm_per_rev * (y + (a / n))))
-        commands.append("M9")
-        commands.extend(toggle_uv())
-
-        a += 1
-        # rotate slightly to the next start point
-        commands.append("G1 Y{:.5f}".format(
-            dir_mod * mm_per_rev * (y + (a / n))))
-
-        # check if the layer is complete
-        if (a < n):
-            extrude = "M8 "
-            commands.extend(toggle_uv())
-        else:
-            extrude = ""
-
-        # return to the other side, extruding if necessary
-        commands.append("{}G1 X{:.5f} Y{:.5f}".format(
-            extrude,
-            0,
-            dir_mod * mm_per_rev * (a / n)))
-
-        # if extruding, stop
-        if (a < n):
-            commands.append("M9")
-            commands.extend(toggle_uv())
-            a += 1
-
-            # rotate slightly to the next start point
-            commands.append("G1 Y{:.5f}".format(
-                dir_mod * mm_per_rev * (a / n)))
-
-
-def offset_uv_gcode(current_layer, filament_width, x2, y, n, layer_height,
-                    uv_offset, offset_rotations):
-    """Generate the g code for one layer with an offset UV spot.
-
-    Arguments:
-    current_layer -- index (from 0) of the current layer
-    filament_width -- width of the filament in the axial direction
-    x2 -- total length of the print
-    y -- total number of turns required to print one layer
-    n -- number of start points for the current layer
-    layer_height -- height of one layer
-    uv_offset -- distance from the UV spot to the syringe tip
-    offset_rotations -- number of rotations for the offset distance
-    """
-
-    mm_per_rev = 10
-
-    a = 0  # index of the helix currently being printed
-
-    extrusion_height = current_layer * layer_height
-    transit_height = extrusion_height + 1.0
-
-    # Home the print head in the radial and axial directions
-    commands.append("G0 Z{:.5f}".format(extrusion_height))
-    commands.append("G0 X{:.5f}".format(0))
-    # Redefine current axial and rotational coordinates as 0
-    commands.append("G10 P0 L20 X0 Y0")
-
-    # Make rotation direction alternate every other layer
-    if (current_layer % 2 == 0):
-        dir_mod = 1
-    else:
-        dir_mod = -1
-
-    while (a < n):
-        # print the helix the entire length of the print
-        commands.extend(toggle_uv())
-        commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-            x2 - uv_offset,
-            dir_mod * mm_per_rev * (y + (a / n) - offset_rotations)))
-        commands.append("M9")
-
-        # cure the remaining uncured part of the helix
-        commands.append("G1 X{:.5f} Y{:.5f}".format(
-            x2,
-            dir_mod * mm_per_rev * (y + (a / n))))
-        commands.extend(toggle_uv())
-
-        a += 1
-
-        # return to the other side
-        commands.append("G0 Z{:.5f}".format(transit_height))
-        commands.append("G0 X{:.5f}".format(0))
-        commands.append("G0 Y{:.5f}".format(dir_mod * mm_per_rev * (a / n)))
-        commands.append("G0 Z{:.5f}".format(extrusion_height))
-
-
-def min_angle_print(current_layer, x2, y, layer_height):
-    """Generate g code to print one layer at the minimum angle.
-
-    Arguments:
-    current_layer -- number of completed layers before this one
-    layer_height -- height of each layer
-    """
-
-    mm_per_rev = 10
-
-    # Home the print head
-    commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
-    commands.append("G0 X{:.5f}".format(0))
-    commands.append("G10 P0 L20 X0 Y0")  # reset x and y axis position
-
-    # Make rotation direction alternate every other layer
-    if (current_layer % 2 == 0):
-        dir_mod = 1
-    else:
-        dir_mod = -1
-
-    # Print one helix
-    commands.extend(toggle_uv())
-    commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-        x2,
-        dir_mod * mm_per_rev * y))
-    commands.append("M9")
-    commands.extend(toggle_uv())
 
 
 def end_gcode():
@@ -260,7 +115,7 @@ def end_gcode():
 
 
 def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
-        helix_angle, smear_factor, feedrate_og, uv_offset):
+        helix_angle, smear_factor, flow_rate, uv_offset, use_strong_pattern):
     """Generate g-code for printing cylinders at various angles.
 
     Required params:
@@ -271,66 +126,54 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         final_diameter - target print diameter
         helix_angle - angle of the helix printed (0 - 90)
         smear_factor - how much the subsequent layer is smeared (0 - 1)
+        flow_rate - calculated flow rate in cm^3 / s
+        uv_offset - axial distance between UV spot and needle tip
 
     all units are in mm and degrees
     """
 
     del commands[:]
+
+    if (uv_offset <= 0):
+        strategy = DirectUvStrategy()
+    else:
+        strategy = OffsetUvStrategy(uv_offset)
+
+    if (use_strong_pattern):
+        targeter = StrongAngleTargeter(helix_angle)
+    else:
+        targeter = DefaultAngleTargeter(helix_angle)
+
     commands.append(";PARAMETERS")
     commands.append(";filament_width={}".format(filament_width_og))
     commands.append(";axial_travel={}".format(axial_travel))
     commands.append(";printbed_diameter={}".format(printbed_diameter))
     commands.append(";final_diameter={}".format(final_diameter))
-    commands.append(";feedrate from flowrate={}".format(feedrate_og))
-
-    if (uv_offset <= 0):
-        uv_is_offset = False
-    else:
-        uv_is_offset = True
+    commands.append(";flowrate={}".format(flow_rate))
 
     smear_factor = smear_factor * 0.01
     print "smear factor", smear_factor
 
-    # Step 1: number of layers needed to print the chosen final diameter
+    layer_height = (math.pi / 4.0 * filament_width_og) * smear_factor
+    print "layer height:", layer_height
+
+    # find the number of layers needed to print the chosen final diameter
     layers = (((final_diameter - printbed_diameter) * 0.5)
-              / (filament_width_og * smear_factor))
+              / layer_height)
 
     if (layers < 1):
         layers = 1.0
 
     # need a whole number of layers
-    if (layers % (filament_width_og * smear_factor) != 0):
+    if (layers % layer_height != 0):
         layers = math.floor(layers)
         print "The print diameter you've set is not symmetrical and has \
 been rounded to {} mm, with {} layers".format(
-                       final_diameter - filament_width_og, layers)
+                       printbed_diameter + (2 * layer_height * layers), layers)
 
     print "layers:", layers
     commands.append(";layers={}".format(layers))
-
-    # Step 2: Deposition Angle
-    helix_angle_rad = math.radians(helix_angle)
-
-    # Angles below this will cause smearing as a helix overlaps itself
-    min_angle = math.atan(filament_width_og / (math.pi * printbed_diameter))
-    print "min angle", min_angle
-
-    # Angles above this will print too slowly
-    max_angle = math.radians(88)
-
-    if (helix_angle_rad <= min_angle):
-        theta = min_angle
-        base_case = True
-    elif (helix_angle_rad >= max_angle):
-        theta = max_angle
-        base_case = False
-    else:
-        theta = helix_angle_rad
-        base_case = False
-
-    print "base case", base_case
-
-    commands.append(";helix_angle={}".format(math.degrees(theta)))
+    commands.append(";helix_angle={}".format(helix_angle))
 
     current_layer = 0
 
@@ -339,86 +182,88 @@ been rounded to {} mm, with {} layers".format(
     commands.append("G10 P0 L20 X0 Y0 Z0")
 
     while (current_layer < layers):
-        # Step 3: Number of start points with corresponding angle
-        print "Layer: ", current_layer
+        print "layer:", current_layer
+
         layer_diameter = (printbed_diameter
-                          + (current_layer * filament_width_og))
+                          + (current_layer * layer_height))
         print "layer diameter", layer_diameter
+
         circumference = math.pi * layer_diameter
         print "circumference", circumference
 
+        helix_angle_rad = math.radians(
+            targeter.get_layer_target_angle(current_layer))
+
+        # Angles below this will cause smearing as a helix overlaps itself
+        min_angle = math.atan(
+                filament_width_og / (math.pi * printbed_diameter))
+        print "min angle", min_angle
+
+        # no helix can be printed with an angle outside this range
+        if (helix_angle_rad <= min_angle):
+            theta = min_angle
+        elif (helix_angle_rad >= math.radians(90)):
+            theta = math.radians(90)
+        else:
+            theta = helix_angle_rad
+
+        print "target angle:", math.degrees(theta)
+
         # distance traveled in the axial direction with every rotation
+        # can also be thought of as the pitch of each helix
         x_move_per_rev = circumference * math.tan(theta)
-        print "x_move_per_rev:", x_move_per_rev
 
-        # filament width corrected for angle of deposition
-        filament_width = filament_width_og / math.cos(theta)
-        print "filament width update:", filament_width
+        # some strategies restrict the set of valid target angles
+        x_move_per_rev = strategy.adjust_target(x_move_per_rev)
+        theta = math.atan(x_move_per_rev / circumference)
+        print "target angle update:", math.degrees(theta)
 
-        # If necessary, update the deposition angle to ensure each helix gets
-        # cured properly
-        offset_divisor = 1.0
-        if (uv_is_offset and not base_case):
-            # revolutions per offset distance - will be adjusted to a whole
-            # number
-            pitch_adjust = uv_offset / x_move_per_rev
+        # need to adjust the angle to perfectly cover the mandrel
+        # find the arc length of one section of filament along the rot axis
+        filament_width_rot = filament_width_og / math.sin(helix_angle_rad)
+        # find the number of start points closest to covering the mandrel
+        n = math.floor(circumference / filament_width_rot)
+        # adjust the pitch and angle according to the closest number of
+        # start points
+        filament_width_rot = circumference / n
+        theta = math.asin(filament_width_og / filament_width_rot)
+        x_move_per_rev = circumference * math.tan(theta)
+        print "final angle:", math.degrees(theta)
+        print "final pitch:", x_move_per_rev
 
-            # to be cured, the mandre needs to rotate a whole number of times
-            # before the pen reaches the ink
-            offset_divisor = round(pitch_adjust)
-            if (offset_divisor < 1.0):
-                offset_divisor = 1.0
+        # filament width along the axial axis
+        filament_width_ax = filament_width_og / math.cos(theta)
+        print "filament width update:", filament_width_ax
 
-            # actually change the relevant variables
-            x_move_per_rev = uv_offset / offset_divisor
-            theta = math.atan(x_move_per_rev / circumference)
-            filament_width = filament_width_og / math.cos(theta)
-
-        # number of start points
-        n = x_move_per_rev / filament_width
+        # number of start points is simply the number of helices that
+        # can fit side by side
         print "number of start points: ", n
 
-        if (float(n).is_integer()):
-            print "number of total start points:", n
-            print "updated angle", math.degrees(theta)
-        else:
-            if (n > 1):
-                n = math.floor(n)
-            else:
-                n = 1
-            theta = angle_finder(n, circumference, filament_width)
+        x2 = axial_travel - filament_width_og  # adjusted for endpoint
 
-        print "theta (rads) for layer {}: {}".format(current_layer, theta)
-        print "number of total start points for layer {}: {}".format(
-            current_layer, n)
-        print "updated helix angle", math.degrees(theta)
-
-        # Step 4: Feed rate
-        x2 = axial_travel - filament_width  # adjusted for endpoint
         y = axial_travel / x_move_per_rev
         print "revs per winding:", y
 
-        feedrate = calc_tangential_velocity(
-            feedrate_og, axial_travel, layer_diameter, theta)
+        # 60000 mm^3 * s / (cm^3 * min)
+        target_feed_rate = ((flow_rate * 60000.0)
+                            / filament_width_og
+                            / layer_height)
+        print "target feed rate:", target_feed_rate
 
-        # Printer can't handle feed rates > 1060 mm/min
-        # This is kind of a hack - the user should be notified of this case
-        if (feedrate > 1060):
-            feedrate = 1060
+        feedrate = adjust_feed_rate(
+            target_feed_rate, layer_diameter, theta)
+        print "Grbl feed rate:", feedrate
 
-        # Step 5: Print layer
         init_layer(feedrate, current_layer, printbed_diameter,
                    filament_width_og, layer_diameter)
-        if (base_case):
-            min_angle_print(
-                current_layer, x2, y, filament_width_og * smear_factor)
-        elif (uv_is_offset):
-            offset_uv_gcode(current_layer, filament_width, x2, y, n,
-                            filament_width_og * smear_factor, uv_offset,
-                            offset_divisor)
-        else:
-            main_gcode(current_layer, filament_width, x2, y, n,
-                       filament_width_og * smear_factor)
+        commands.extend(strategy.generate_layer_gcode(
+            current_layer,
+            filament_width_ax,
+            x2,
+            y,
+            n,
+            layer_height,
+            targeter.get_layer_direction_modifier(current_layer)))
         current_layer += 1
 
     # Step 6: Complete print
