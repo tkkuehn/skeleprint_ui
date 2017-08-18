@@ -16,13 +16,15 @@ class OffsetUvStrategy:
         # before the pen reaches the ink
         offset_divisor = round(pitch_adjust)
         if (offset_divisor < 1.0):
-            offset_divisor = 1.0
+            offset_divisor = 0.0
 
         # store offset rotations for printing
         self.offset_rotations = offset_divisor
 
         # actually change the relevant variables
-        pitch = self.uv_offset / offset_divisor
+        if (offset_divisor > 0.0):
+            pitch = self.uv_offset / offset_divisor
+
         return pitch
 
     def generate_layer_gcode(self, current_layer, filament_width,
@@ -44,8 +46,8 @@ class OffsetUvStrategy:
 
         a = 0  # index of the helix currently being printed
 
-        extrusion_height = current_layer * layer_height
-        transit_height = extrusion_height + 1.0
+        extrusion_height = (current_layer * layer_height) + layer_height
+        transit_height = extrusion_height + (2 * layer_height)
 
         # Home the print head in the radial and axial directions
         commands.append("G0 Z{:.5f}".format(extrusion_height))

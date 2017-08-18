@@ -12,8 +12,8 @@ import math
 import time
 from offset_uv_strategy import OffsetUvStrategy
 from direct_uv_strategy import DirectUvStrategy
-from default_angle_targeter import DefaultAngleTargeter
-from gcode_utils import MM_PER_REV, MAX_ANGLE, toggle_uv
+from strong_angle_targeter import StrongAngleTargeter
+from gcode_utils import MAX_ANGLE
 
 
 commands = []
@@ -51,15 +51,30 @@ def angle_finder(num_start_points, circumference, filament_width):
     return theta
 
 
-def calc_tangential_velocity(feedrate, axial_travel, diameter, theta):
-    """Calculate the tangential velocity of the print head."""
+def adjust_feed_rate(target_feed_rate, diameter, theta):
+    """Calculate the feed rate that should be passed to Grbl.
 
-    hyp = (math.pi * diameter) / math.cos(theta)
-    time = (hyp/feedrate)
-    w = (2 * math.pi) / time
-    tangential_velocity = w * (diameter / 2)
+    In order to have the print head move at a given target feed rate,
+    the properties of the rotational axis need to be considered. Grbl
+    expects to be handling a cartesian system, so it expects all
+    distances to be distances, not angles. Because of this, the feed
+    rate needs to be adjusted to accomplish the target feed rate. See
+    page 121 of Tristan's lab book for more information.
 
-    return tangential_velocity
+    Required arguments:
+    target_feed_rate -- desired speed of print head relative to mandrel
+    diameter -- diameter of the current layer
+    theta -- target angle
+    """
+
+    new_feed_rate = (target_feed_rate
+                     * (math.pow(math.sin(theta), 2)
+                        + math.pow(10.0
+                                   / diameter
+                                   / math.pi
+                                   * math.cos(theta), 2)))
+
+    return new_feed_rate
 
 
 def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
@@ -70,34 +85,6 @@ def init_layer(feedrate, current_layer, printbed_diameter, filament_width_og,
     commands.append("; layer {}".format(current_layer))
     commands.append(";----------------------")
     commands.append("G1 F{:.5f}".format(feedrate))
-
-
-def min_angle_print(current_layer, x2, y, layer_height):
-    """Generate g code to print one layer at the minimum angle.
-
-    Arguments:
-    current_layer -- number of completed layers before this one
-    layer_height -- height of each layer
-    """
-
-    # Home the print head
-    commands.append("G0 Z{:.5f}".format(current_layer * (layer_height)))
-    commands.append("G0 X{:.5f}".format(0))
-    commands.append("G10 P0 L20 X0 Y0")  # reset x and y axis position
-
-    # Make rotation direction alternate every other layer
-    if (current_layer % 2 == 0):
-        dir_mod = 1
-    else:
-        dir_mod = -1
-
-    # Print one helix
-    commands.extend(toggle_uv())
-    commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-        x2,
-        dir_mod * MM_PER_REV * y))
-    commands.append("M9")
-    commands.extend(toggle_uv())
 
 
 def end_gcode():
@@ -128,7 +115,7 @@ def end_gcode():
 
 
 def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
-        helix_angle, smear_factor, feedrate_og, uv_offset):
+        helix_angle, smear_factor, flow_rate, uv_offset):
     """Generate g-code for printing cylinders at various angles.
 
     Required params:
@@ -139,7 +126,7 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         final_diameter - target print diameter
         helix_angle - angle of the helix printed (0 - 90)
         smear_factor - how much the subsequent layer is smeared (0 - 1)
-        feedrate_og - target feedrate
+        flow_rate - calculated flow rate in cm^3 / s
         uv_offset - axial distance between UV spot and needle tip
 
     all units are in mm and degrees
@@ -151,31 +138,34 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         strategy = DirectUvStrategy()
     else:
         strategy = OffsetUvStrategy(uv_offset)
-    targeter = DefaultAngleTargeter(helix_angle)
+    targeter = StrongAngleTargeter(helix_angle)
 
     commands.append(";PARAMETERS")
     commands.append(";filament_width={}".format(filament_width_og))
     commands.append(";axial_travel={}".format(axial_travel))
     commands.append(";printbed_diameter={}".format(printbed_diameter))
     commands.append(";final_diameter={}".format(final_diameter))
-    commands.append(";feedrate from flowrate={}".format(feedrate_og))
+    commands.append(";flowrate={}".format(flow_rate))
 
     smear_factor = smear_factor * 0.01
     print "smear factor", smear_factor
 
-    # Step 1: number of layers needed to print the chosen final diameter
+    layer_height = (math.pi / 4.0 * filament_width_og) * smear_factor
+    print "layer height:", layer_height
+
+    # find the number of layers needed to print the chosen final diameter
     layers = (((final_diameter - printbed_diameter) * 0.5)
-              / (filament_width_og * smear_factor))
+              / layer_height)
 
     if (layers < 1):
         layers = 1.0
 
     # need a whole number of layers
-    if (layers % (filament_width_og * smear_factor) != 0):
+    if (layers % layer_height != 0):
         layers = math.floor(layers)
         print "The print diameter you've set is not symmetrical and has \
 been rounded to {} mm, with {} layers".format(
-                       final_diameter - filament_width_og, layers)
+                       printbed_diameter + (2 * layer_height * layers), layers)
 
     print "layers:", layers
     commands.append(";layers={}".format(layers))
@@ -188,6 +178,15 @@ been rounded to {} mm, with {} layers".format(
     commands.append("G10 P0 L20 X0 Y0 Z0")
 
     while (current_layer < layers):
+        print "Layer: ", current_layer
+
+        layer_diameter = (printbed_diameter
+                          + (current_layer * layer_height))
+        print "layer diameter", layer_diameter
+
+        circumference = math.pi * layer_diameter
+        print "circumference", circumference
+
         helix_angle_rad = math.radians(
             targeter.get_layer_target_angle(current_layer))
 
@@ -196,38 +195,30 @@ been rounded to {} mm, with {} layers".format(
                 filament_width_og / (math.pi * printbed_diameter))
         print "min angle", min_angle
 
+        # no helix can be printed with an angle outside this range
         if (helix_angle_rad <= min_angle):
             theta = min_angle
-            base_case = True
         elif (helix_angle_rad >= math.radians(MAX_ANGLE)):
             theta = math.radians(MAX_ANGLE)
-            base_case = False
         else:
             theta = helix_angle_rad
-            base_case = False
-
-        print "base case", base_case
-
-        # Step 3: Number of start points with corresponding angle
-        print "Layer: ", current_layer
-        layer_diameter = (printbed_diameter
-                          + (current_layer * filament_width_og))
-        print "layer diameter", layer_diameter
-        circumference = math.pi * layer_diameter
-        print "circumference", circumference
 
         # distance traveled in the axial direction with every rotation
+        # can also be thought of as the pitch of each helix
         x_move_per_rev = circumference * math.tan(theta)
-        print "x_move_per_rev:", x_move_per_rev
+        print "x_move_per_rev (pitch):", x_move_per_rev
 
+        # some strategies restrict the set of valid target angles
         x_move_per_rev = strategy.adjust_target(x_move_per_rev)
         theta = math.atan(x_move_per_rev / circumference)
+        print "x_move_per_rev (pitch) update:", x_move_per_rev
 
-        # filament width corrected for angle of deposition
+        # filament width needs to be corrected for angle of deposition
         filament_width = filament_width_og / math.cos(theta)
         print "filament width update:", filament_width
 
-        # number of start points
+        # number of start points is simply the number of helices that
+        # can fit side by side
         n = x_move_per_rev / filament_width
         print "number of start points: ", n
 
@@ -239,27 +230,27 @@ been rounded to {} mm, with {} layers".format(
                 n = math.floor(n)
             else:
                 n = 1
+            # angle has to be adjusted to reflect the number of start
+            # points
             theta = angle_finder(n, circumference, filament_width)
-
+            x_move_per_rev = circumference * math.tan(theta)
         print "theta (rads) for layer {}: {}".format(current_layer, theta)
         print "number of total start points for layer {}: {}".format(
             current_layer, n)
-        print "updated helix angle", math.degrees(theta)
 
-        # Step 4: Feed rate
-        x2 = axial_travel - filament_width  # adjusted for endpoint
+        x2 = axial_travel - filament_width_og  # adjusted for endpoint
+
         y = axial_travel / x_move_per_rev
         print "revs per winding:", y
 
-        feedrate = calc_tangential_velocity(
-            feedrate_og, axial_travel, layer_diameter, theta)
+        # 60000 mm^3 * s / (cm^3 * min)
+        target_feed_rate = ((flow_rate * 60000.0)
+                            / filament_width_og
+                            / layer_height)
 
-        # Printer can't handle feed rates > 1060 mm/min
-        # This is kind of a hack - the user should be notified of this case
-        if (feedrate > 1060):
-            feedrate = 1060
+        feedrate = adjust_feed_rate(
+            target_feed_rate, layer_diameter, theta)
 
-        # Step 5: Print layer
         init_layer(feedrate, current_layer, printbed_diameter,
                    filament_width_og, layer_diameter)
         commands.extend(strategy.generate_layer_gcode(

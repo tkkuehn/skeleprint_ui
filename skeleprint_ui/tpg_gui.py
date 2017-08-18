@@ -40,7 +40,7 @@ class Tool_Path_Generator:
         self.filament_width_og = DoubleVar()
         self.helix_angle = DoubleVar()
         self.smear_factor = DoubleVar()
-        self.feedrate = DoubleVar()
+        self.flow_rate = DoubleVar()
         self.uv_offset = DoubleVar()
 
         self.axial_length.set(200.0)
@@ -49,7 +49,7 @@ class Tool_Path_Generator:
         self.filament_width_og.set(0.41)
         self.helix_angle.set(45.0)
         self.smear_factor.set(100.0)
-        self.feedrate.set(1300.0)
+        self.flow_rate.set(0.0015)
         self.uv_offset.set(32.5)
 
         top.geometry("700x550")
@@ -276,7 +276,7 @@ class Tool_Path_Generator:
         self.Label8.grid(row=1, column=0, sticky=E)
         self.Label8.configure(background="#e6e6e6")
         self.Label8.configure(foreground="#000000")
-        self.Label8.configure(text='''Feedrate\n(from flowrate)''')
+        self.Label8.configure(text='''Flow rate''')
 
         self.Entry6 = Entry(self.Labelframe2)
         self.Entry6.grid(row=1, column=1)
@@ -288,7 +288,7 @@ class Tool_Path_Generator:
         self.Entry6.configure(insertbackground="black")
         self.Entry6.configure(selectbackground="#c4c4c4")
         self.Entry6.configure(selectforeground="black")
-        self.Entry6.configure(textvariable=self.feedrate)
+        self.Entry6.configure(textvariable=self.flow_rate)
 
         self.Label12 = Label(self.Labelframe2)
         self.Label12.grid(row=1, column=2, sticky=W)
@@ -298,7 +298,7 @@ class Tool_Path_Generator:
         self.Label12.configure(foreground="#000000")
         self.Label12.configure(highlightbackground="#d9d9d9")
         self.Label12.configure(highlightcolor="black")
-        self.Label12.configure(text='''mm/min''')
+        self.Label12.configure(text='''cm^3 / s''')
 
         self.uv_label = Label(self.Labelframe2)
         self.uv_label.grid(row=2, column=0, sticky=E)
@@ -399,7 +399,7 @@ If angle = 90, the layer will consist of many straight lines''')
             self.final_diameter.get(),
             self.helix_angle.get(),
             self.smear_factor.get(),
-            self.feedrate.get(),
+            self.flow_rate.get(),
             self.uv_offset.get()))
         self.Button1.configure(foreground="#000000")
         self.Button1.configure(highlightbackground="#e6e6e6")
