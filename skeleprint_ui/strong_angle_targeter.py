@@ -5,7 +5,7 @@ class StrongAngleTargeter:
 
     def get_layer_target_angle(self, layer_index):
         if (layer_index % 3 == 0):
-            return 88
+            return 90
         else:
             return self.angle
 

@@ -154,28 +154,21 @@ If the angle entered is greater 90 degrees, it will be set to 90 degrees. This m
 
 If angle entered is less than 0 degrees, it will be set to 0 degrees. This means that layers will consist of a single helix printed as close together as possible.
 
-Feedrate
+Flow Rate
 --------
 
-The feedrate (mm/min) is equal to the speed of movement based on flow rate of the extrusion system. 
-
-This feedrate should be calculated in the lab as follows:
+The flow rate (cm^3/s) is the flow rate of the extrusion system. 
 
 flow rate = mL/s = cm^3/s
-
-cross sectional area of nozzel = mm^2 
-
-feed rate = flow rate/area = mm/s * 60  = mm/min
 
 When this value is input into the GUI the algorithm uses it to calculate the tangential velocity using the folling algorithm:
 
 
 .. code-block:: python
 
-    hypotenuse = (math.pi * diameter) / math.cos(theta)
-    time = hypotenuse/feedrate
-    angular_velocity = (2 * math.pi)/time
-    tangential_velocity = angular_velocity * (diameter/2) 
+    target_feed_rate = ((flow_rate * 60000.0)
+                        / filament_width_og
+                        / layer_height)
 
 This value is re-calculated at each layer as the diameter changes at each layer.
 
@@ -187,9 +180,7 @@ The UV distance represents the distance from the focal point of the UV pen and t
 Layer Height %
 --------------
 
-The layer height % is used to calculate the smear factor. At 100% the layer height is equal to the filament width. If layer height % is less than 100% then the radial axis only moves up some percentage of the filament width which means you are smearing the ink. 
-
-I would take extra care when messing with this. 
+The layer height % is used to calculate the smear factor. At 100% the layer height is roughly equal to the filament width. If layer height % is less than 100% then the radial axis only moves up some percentage of the filament width which means you are smearing the ink. 
 
 Sending G Code to Printer
 ======================
@@ -219,7 +210,7 @@ NOTE: Axial Axis = X Axis, Rotational Axis = Y Axis, Radial Axis = Z Axis.
 
 NOTE: After homing is complete the positive x direction is left (<--) and the positive radial direction is set to up.
 
-10. The axial axis is now homed. However you still need to manually calibrate the radial axis. You can do this by giving gcode commands such as "Z -10.3" (move down 10.3 mm), or using the direction button on the right hand side. Once you have calibrated the radial axis you need to set this position as 0 by clicking the "Reset Z Axis" button near the top (if you forget part it is okay because the gcode from the gcode generator will take care of it anyway).
+10. The axial axis is now homed. However you still need to manually calibrate the radial axis. You can do this by giving gcode commands such as "Z -10.3" (move down 10.3 mm), or using the direction button on the right hand side. The radial axis should be set to zero when the tip of the needle is touching the mandrel. Once you have calibrated the radial axis you need to set this position as 0 by clicking the "Reset Z Axis" button near the top (if you forget part it is okay because the gcode from the gcode generator will take care of it anyway).
 
 11. You can now make any adjustments you need by giving direct gcode commands such as "X10 Y10 Z3.57" (move 10mm in the positive x direction, make one rotation of the printbed [10mm = 1 rotation], and move z-axis up 3.57 mm)
 

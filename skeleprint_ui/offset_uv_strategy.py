@@ -59,21 +59,20 @@ class OffsetUvStrategy:
             # print the helix the entire length of the print
             commands.extend(toggle_uv())
             commands.append("M8 G1 X{:.5f} Y{:.5f}".format(
-                adjusted_axial_length - self.uv_offset,
+                adjusted_axial_length,
                 dir_mod
                 * self.MM_PER_REV
-                * (layer_revolutions
-                   + (a / start_points)
-                   - self.offset_rotations)
+                * (layer_revolutions + (a / start_points))
             ))
             commands.append("M9")
 
             # cure the remaining uncured part of the helix
             commands.append("G1 X{:.5f} Y{:.5f}".format(
-                adjusted_axial_length,
+                adjusted_axial_length + self.uv_offset,
                 dir_mod
                 * self.MM_PER_REV
-                * (layer_revolutions + (a / start_points))
+                * (layer_revolutions + (a / start_points)
+                   + self.offset_rotations)
             ))
             commands.extend(toggle_uv())
 

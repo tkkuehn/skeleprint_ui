@@ -13,7 +13,7 @@ import time
 from offset_uv_strategy import OffsetUvStrategy
 from direct_uv_strategy import DirectUvStrategy
 from strong_angle_targeter import StrongAngleTargeter
-from gcode_utils import MAX_ANGLE
+from default_angle_targeter import DefaultAngleTargeter
 
 
 commands = []
@@ -115,7 +115,7 @@ def end_gcode():
 
 
 def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
-        helix_angle, smear_factor, flow_rate, uv_offset):
+        helix_angle, smear_factor, flow_rate, uv_offset, use_strong_pattern):
     """Generate g-code for printing cylinders at various angles.
 
     Required params:
@@ -138,7 +138,11 @@ def tpg(axial_travel, filament_width_og, printbed_diameter, final_diameter,
         strategy = DirectUvStrategy()
     else:
         strategy = OffsetUvStrategy(uv_offset)
-    targeter = StrongAngleTargeter(helix_angle)
+
+    if (use_strong_pattern):
+        targeter = StrongAngleTargeter(helix_angle)
+    else:
+        targeter = DefaultAngleTargeter(helix_angle)
 
     commands.append(";PARAMETERS")
     commands.append(";filament_width={}".format(filament_width_og))
@@ -178,7 +182,7 @@ been rounded to {} mm, with {} layers".format(
     commands.append("G10 P0 L20 X0 Y0 Z0")
 
     while (current_layer < layers):
-        print "Layer: ", current_layer
+        print "layer:", current_layer
 
         layer_diameter = (printbed_diameter
                           + (current_layer * layer_height))
@@ -198,45 +202,42 @@ been rounded to {} mm, with {} layers".format(
         # no helix can be printed with an angle outside this range
         if (helix_angle_rad <= min_angle):
             theta = min_angle
-        elif (helix_angle_rad >= math.radians(MAX_ANGLE)):
-            theta = math.radians(MAX_ANGLE)
+        elif (helix_angle_rad >= math.radians(90)):
+            theta = math.radians(90)
         else:
             theta = helix_angle_rad
+
+        print "target angle:", math.degrees(theta)
 
         # distance traveled in the axial direction with every rotation
         # can also be thought of as the pitch of each helix
         x_move_per_rev = circumference * math.tan(theta)
-        print "x_move_per_rev (pitch):", x_move_per_rev
 
         # some strategies restrict the set of valid target angles
         x_move_per_rev = strategy.adjust_target(x_move_per_rev)
         theta = math.atan(x_move_per_rev / circumference)
-        print "x_move_per_rev (pitch) update:", x_move_per_rev
+        print "target angle update:", math.degrees(theta)
 
-        # filament width needs to be corrected for angle of deposition
-        filament_width = filament_width_og / math.cos(theta)
-        print "filament width update:", filament_width
+        # need to adjust the angle to perfectly cover the mandrel
+        # find the arc length of one section of filament along the rot axis
+        filament_width_rot = filament_width_og / math.sin(helix_angle_rad)
+        # find the number of start points closest to covering the mandrel
+        n = math.floor(circumference / filament_width_rot)
+        # adjust the pitch and angle according to the closest number of
+        # start points
+        filament_width_rot = circumference / n
+        theta = math.asin(filament_width_og / filament_width_rot)
+        x_move_per_rev = circumference * math.tan(theta)
+        print "final angle:", math.degrees(theta)
+        print "final pitch:", x_move_per_rev
+
+        # filament width along the axial axis
+        filament_width_ax = filament_width_og / math.cos(theta)
+        print "filament width update:", filament_width_ax
 
         # number of start points is simply the number of helices that
         # can fit side by side
-        n = x_move_per_rev / filament_width
         print "number of start points: ", n
-
-        if (float(n).is_integer()):
-            print "number of total start points:", n
-            print "updated angle", math.degrees(theta)
-        else:
-            if (n > 1):
-                n = math.floor(n)
-            else:
-                n = 1
-            # angle has to be adjusted to reflect the number of start
-            # points
-            theta = angle_finder(n, circumference, filament_width)
-            x_move_per_rev = circumference * math.tan(theta)
-        print "theta (rads) for layer {}: {}".format(current_layer, theta)
-        print "number of total start points for layer {}: {}".format(
-            current_layer, n)
 
         x2 = axial_travel - filament_width_og  # adjusted for endpoint
 
@@ -247,19 +248,21 @@ been rounded to {} mm, with {} layers".format(
         target_feed_rate = ((flow_rate * 60000.0)
                             / filament_width_og
                             / layer_height)
+        print "target feed rate:", target_feed_rate
 
         feedrate = adjust_feed_rate(
             target_feed_rate, layer_diameter, theta)
+        print "Grbl feed rate:", feedrate
 
         init_layer(feedrate, current_layer, printbed_diameter,
                    filament_width_og, layer_diameter)
         commands.extend(strategy.generate_layer_gcode(
             current_layer,
-            filament_width,
+            filament_width_ax,
             x2,
             y,
             n,
-            filament_width_og * smear_factor,
+            layer_height,
             targeter.get_layer_direction_modifier(current_layer)))
         current_layer += 1
 
