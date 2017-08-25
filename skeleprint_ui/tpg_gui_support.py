@@ -68,7 +68,7 @@ def adjust_feed_rate(target_feed_rate, diameter, theta):
     """
 
     new_feed_rate = (target_feed_rate
-                     * (math.pow(math.sin(theta), 2)
+                     * math.sqrt(math.pow(math.sin(theta), 2)
                         + math.pow(10.0
                                    / diameter
                                    / math.pi
